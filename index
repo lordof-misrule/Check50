@@ -1451,7 +1451,7 @@
 
         const { data, error } = await supabaseClient
             .from('diario')
-            .insert([datiDaSalvare]);
+            .upsert([datiDaSalvare], { onConflict: 'user_id,data' });
 
         if (error) {
             console.error("Errore durante il salvataggio:", error);
