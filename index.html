@@ -634,7 +634,7 @@
             <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" name="colazione"><span>French Toast: 60g Pane + 1 Uovo + 120-150g Albume + 20g Marmellata</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" name="colazione"><span>Pancake: 50g Farina + 1 Uovo + 120-150g Albume + 20g Marmellata</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="18" name="colazione"><span>60g Pane + 100g Ricotta di capra + 15-20g Marmellata <span class="badge-max">(max 1×/settimana)</span></span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="5" name="colazione"><span>Colazione fuori</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="5" name="colazione"><span>Colazione fuori (es. dolce/torta + caffè al bar)</span></label>
         </div>
     </div>
 
@@ -1505,6 +1505,35 @@
     }
 
     // ---- FUNZIONE STAMPA PDF ----
+    function elencoPastiSelezionati() {
+        const sezioni = [
+            { id: 'sec-colazione', titolo: 'Colazione' },
+            { id: 'sec-mattina', titolo: 'Metà Mattina' },
+            { id: 'sec-pranzo', titolo: 'Pranzo' },
+            { id: 'sec-merenda', titolo: 'Merenda' },
+            { id: 'sec-cena', titolo: 'Cena' },
+            { id: 'sec-budget', titolo: 'Extra' }
+        ];
+
+        let html = '';
+        sezioni.forEach(sez => {
+            const card = document.getElementById(sez.id);
+            if (!card) return;
+            const selezionati = Array.from(card.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(cb => {
+                    const span = cb.parentElement.querySelector('span');
+                    return span ? span.textContent.trim() : '';
+                })
+                .filter(Boolean);
+
+            if (selezionati.length > 0) {
+                html += `<li><strong>${sez.titolo}:</strong> ${selezionati.join(' + ')}</li>`;
+            }
+        });
+
+        return html || '<li><em>Nessun pasto selezionato.</em></li>';
+    }
+
     function generaStampaSintetica() {
         const container = document.getElementById('print-summary');
         const oggi = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
@@ -1529,6 +1558,11 @@
                 <strong>Totale kcal:</strong> ${kcal} kcal &nbsp;|&nbsp; <strong>Proteine:</strong> ${prot}
                 ${peso ? `<br><strong>Peso registrato:</strong> ${peso.textContent}` : ''}
             </div>
+
+            <h2>Pasti della Giornata</h2>
+            <ul>
+                ${elencoPastiSelezionati()}
+            </ul>
 
             <h2>Diario Sintomi & Abitudini</h2>
             <ul>
