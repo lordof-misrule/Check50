@@ -787,9 +787,810 @@
 
         <div class="section-subtitle">Acqua Bevuta</div>
         <div class="button-group" data-group="acqua">
-            <button type="button" class="btn-option" onclick="selectOption(this)">&lt; 1.5</button>
-            <button type="button" class="btn-option" onclick="selectOption(this)">1.5</button>
-            <button type="button" class="btn-option" onclick="selectOption(this)">1.5-2</button>
+            <button type="button" class="btn-option" onclick="selectOption(this)">&lt; 1.5 L</button>
+            <button type="button" class="btn-option" onclick="selectOption(this)">1.5 L</button>
+            <button type="button" class="btn-option" onclick="selectOption(this)">&ge; 1.8 L</button>
         </div>
+
+        <div class="section-subtitle">Peso del Mattino (kg)</div>
+        <div class="picker-container">
+            <div class="picker-selection-highlight"></div>
+            <div class="picker-list" id="weight-picker" onscroll="handlePickerScroll()"></div>
+        </div>
+
+        <div class="section-subtitle">Note / Altri Sintomi</div>
+        <textarea id="diary-notes" placeholder="Inserisci note su energia, alimentazione o altri sintomi..."></textarea>
     </div>
+
 </div>
+
+<div class="action-bar">
+    <button class="btn-action btn-cloud" onclick="salvaNelCloud()">
+        ☁️ Salva nel Cloud
+    </button>
+    <button class="btn-action" onclick="generaStampaSintetica()">
+        📄 PDF
+    </button>
+</div>
+
+<div class="print-summary-container" id="print-summary"></div>
+
+<script>
+    // ==========================================
+    // CONFIGURAZIONE SUPABASE
+    // ==========================================
+    const SUPABASE_URL = 'https://bnxrakownluolqlznotd.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YqhonHZDZWSDHKci2ZtpzA_cFqDfqYN';
+
+    let supabaseClient = null;
+    try {
+        const { createClient } = supabase;
+        supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } catch (err) {
+        console.error("Errore inizializzazione Supabase:", err);
+    }
+
+    let weightChartInstance = null;
+
+    const CYCLE_LENGTH = 28;
+    const STORAGE_KEY = 'last-period-start-date';
+
+    // ==========================================
+    // UTILITY GENERICHE
+    // ==========================================
+    function getDataOggi() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    function mostraAvviso(msg, durata = 3000) {
+        const toast = document.getElementById('toast');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        clearTimeout(window._toastTimeout);
+        window._toastTimeout = setTimeout(() => { toast.style.display = 'none'; }, durata);
+    }
+
+    function debounce(fn, delay) {
+        let t;
+        return function (...args) {
+            clearTimeout(t);
+            t = setTimeout(() => fn.apply(this, args), delay);
+        };
+    }
+
+    function formatDataBreve(dataStr) {
+        try {
+            const [y, m, d] = dataStr.split('-').map(Number);
+            const dt = new Date(y, m - 1, d);
+            return dt.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+        } catch (e) {
+            return dataStr;
+        }
+    }
+
+    // ==========================================
+    // AUTENTICAZIONE
+    // ==========================================
+    let currentUser = null;
+    let appInitialized = false;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        bootstrapAuth();
+    });
+
+    async function bootstrapAuth() {
+        if (!supabaseClient) {
+            mostraAvviso('Errore: Supabase non inizializzato.');
+            return;
+        }
+
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.user) {
+            currentUser = session.user;
+            onLoginSuccess();
+        } else {
+            mostraOverlayAuth();
+        }
+
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN' && session && session.user) {
+                currentUser = session.user;
+                onLoginSuccess();
+            } else if (event === 'SIGNED_OUT') {
+                currentUser = null;
+                location.reload();
+            }
+        });
+    }
+
+    function onLoginSuccess() {
+        nascondiOverlayAuth();
+        const label = document.getElementById('user-email-label');
+        if (label) label.textContent = currentUser.email;
+        const userBar = document.getElementById('user-bar');
+        if (userBar) userBar.style.display = 'flex';
+        if (!appInitialized) {
+            appInitialized = true;
+            initApp();
+        }
+    }
+
+    function mostraOverlayAuth() {
+        document.getElementById('auth-overlay').style.display = 'flex';
+        document.getElementById('main-app').style.display = 'none';
+        const bar = document.querySelector('.action-bar');
+        if (bar) bar.style.display = 'none';
+    }
+
+    function nascondiOverlayAuth() {
+        document.getElementById('auth-overlay').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        const bar = document.querySelector('.action-bar');
+        if (bar) bar.style.display = 'flex';
+    }
+
+    async function effettuaLogin() {
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+        const errEl = document.getElementById('auth-error');
+        errEl.style.color = '#c0392b';
+        errEl.textContent = '';
+        if (!email || !password) {
+            errEl.textContent = 'Inserisci email e password.';
+            return;
+        }
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            errEl.textContent = 'Errore: ' + error.message;
+        }
+    }
+
+    async function effettuaRegistrazione() {
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+        const errEl = document.getElementById('auth-error');
+        errEl.style.color = '#c0392b';
+        errEl.textContent = '';
+        if (!email || !password) {
+            errEl.textContent = 'Inserisci email e password.';
+            return;
+        }
+        if (password.length < 6) {
+            errEl.textContent = 'La password deve avere almeno 6 caratteri.';
+            return;
+        }
+        const { data, error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) {
+            errEl.textContent = 'Errore: ' + error.message;
+            return;
+        }
+        if (data.user && !data.session) {
+            errEl.style.color = '#1b8744';
+            errEl.textContent = "Registrazione avviata! Controlla la tua email per confermare l'account, poi effettua il login.";
+        }
+    }
+
+    async function effettuaLogout() {
+        await supabaseClient.auth.signOut();
+    }
+
+    // ==========================================
+    // INIZIALIZZAZIONE APP (solo dopo login)
+    // ==========================================
+    function initApp() {
+        // ---- DIETA E CHECKLIST ----
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        const totalKcalEl = document.getElementById('total-kcal');
+        const totalProtEl = document.getElementById('total-prot');
+
+        // Assegna un id stabile a ogni checkbox dei pasti, per poterle salvare/ripristinare
+        checkboxes.forEach((cb, idx) => {
+            if (!cb.id) cb.id = 'diet-cb-' + idx;
+        });
+
+        const checkNoci = document.getElementById('check-noci');
+        const checkOlio5 = document.getElementById('check-olio-5');
+        const checkOlio10 = document.getElementById('check-olio-10');
+        const itemOlio5 = document.getElementById('item-olio-5');
+        const itemOlio10 = document.getElementById('item-olio-10');
+
+        function updateTotalsAndRules() {
+            let kcal = 0;
+            let prot = 0;
+
+            const cenaFuoriSelezionata = document.querySelector('input[name="cena-fuori"]:checked');
+
+            if (!cenaFuoriSelezionata) {
+                const selectedCenaProt = document.querySelector('input[name="cena-prot"]:checked');
+                const fatType = selectedCenaProt ? selectedCenaProt.dataset.fat : null;
+                const hasNoci = checkNoci.checked;
+
+                if (fatType === 'grassa') {
+                    itemOlio5.classList.add('disabled');
+                    itemOlio10.classList.add('disabled');
+                    checkOlio5.checked = false;
+                    checkOlio10.checked = false;
+                    checkOlio5.disabled = true;
+                    checkOlio10.disabled = true;
+                } else if (fatType === 'media' || hasNoci) {
+                    itemOlio5.classList.remove('disabled');
+                    itemOlio10.classList.add('disabled');
+                    checkOlio10.checked = false;
+                    checkOlio5.disabled = false;
+                    checkOlio10.disabled = true;
+                } else {
+                    itemOlio5.classList.remove('disabled');
+                    itemOlio10.classList.remove('disabled');
+                    checkOlio5.disabled = false;
+                    checkOlio10.disabled = false;
+                }
+            }
+
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    kcal += parseInt(cb.dataset.kcal || 0, 10);
+                    prot += parseInt(cb.dataset.prot || 0, 10);
+                }
+            });
+
+            totalKcalEl.textContent = kcal;
+            totalProtEl.textContent = prot + ' g';
+        }
+        window.updateTotalsAndRules = updateTotalsAndRules;
+
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                if (e.target.name && e.target.checked) {
+                    document.querySelectorAll(`input[name="${e.target.name}"]`).forEach(other => {
+                        if (other !== e.target) other.checked = false;
+                    });
+                }
+                updateTotalsAndRules();
+                salvaBozza();
+            });
+        });
+
+        updateTotalsAndRules();
+        inizializzaSostitutivi();
+
+        // ---- CICLO ORMONALE ----
+        const dateInput = document.getElementById('last-period-input');
+        const saveBtn = document.getElementById('save-period-btn');
+        const saveMsg = document.getElementById('cycle-save-msg');
+        let lastPeriodStart = null;
+
+        function parseDateInput(value) {
+            const [y, m, d] = value.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+        function toDateOnly(d) {
+            const copy = new Date(d);
+            copy.setHours(0, 0, 0, 0);
+            return copy;
+        }
+
+        function calculateCycle() {
+            const badge = document.getElementById('cycle-days-left');
+            const advice = document.getElementById('cycle-advice');
+            document.querySelectorAll('.phase-box').forEach(el => el.classList.remove('active'));
+
+            if (!lastPeriodStart) {
+                badge.textContent = 'Inserisci una data';
+                advice.textContent = "Inserisci la data di inizio dell'ultimo ciclo per attivare il monitoraggio.";
+                return;
+            }
+
+            const today = toDateOnly(new Date());
+            const start = toDateOnly(lastPeriodStart);
+            const daysSinceStart = Math.round((today - start) / (1000 * 60 * 60 * 24));
+
+            if (daysSinceStart >= 0 && daysSinceStart < CYCLE_LENGTH) {
+                const cycleDay = daysSinceStart + 1;
+                const daysLeft = CYCLE_LENGTH - daysSinceStart;
+                badge.textContent = `-${daysLeft} gg al ciclo`;
+
+                if (cycleDay >= 1 && cycleDay <= 5) {
+                    document.getElementById('phase-m').classList.add('active');
+                    advice.textContent = "Fase Mestruale: Possibile calo di energia. Privilegiare cibi caldi, digeribili e ricchi di ferro.";
+                } else if (cycleDay >= 6 && cycleDay <= 13) {
+                    document.getElementById('phase-f').classList.add('active');
+                    advice.textContent = "Fase Follicolare: Energia in aumento e metabolismo efficiente. Ottimo momento per l'allenamento.";
+                } else if (cycleDay >= 14 && cycleDay <= 16) {
+                    document.getElementById('phase-o').classList.add('active');
+                    advice.textContent = "Fase Ovulatoria: Picco energetico e vitalità al massimo.";
+                } else {
+                    document.getElementById('phase-l').classList.add('active');
+                    advice.textContent = "Fase Luteale: Possibile ritenzione o voglia di carboidrati. Gestire bene i minerali e l'idratazione.";
+                }
+            } else {
+                badge.textContent = 'Ciclo da aggiornare';
+                advice.textContent = "La data inserita è antecedente a un ciclo completo. Aggiorna la data di inizio.";
+            }
+        }
+
+        const savedDateStr = localStorage.getItem(STORAGE_KEY);
+        if (savedDateStr) {
+            dateInput.value = savedDateStr;
+            lastPeriodStart = parseDateInput(savedDateStr);
+            calculateCycle();
+        }
+
+        saveBtn.addEventListener('click', () => {
+            const val = dateInput.value;
+            if (!val) {
+                saveMsg.textContent = "Seleziona una data valida.";
+                return;
+            }
+            localStorage.setItem(STORAGE_KEY, val);
+            lastPeriodStart = parseDateInput(val);
+            calculateCycle();
+            saveMsg.textContent = "Data salvata con successo!";
+            setTimeout(() => { saveMsg.textContent = ""; }, 3000);
+        });
+
+        // ---- PESO PICKER ----
+        const pickerList = document.getElementById('weight-picker');
+        const minWeight = 40.0;
+        const maxWeight = 100.0;
+        const step = 0.1;
+        let items = [];
+
+        for (let w = minWeight; w <= maxWeight + 0.001; w += step) {
+            items.push(parseFloat(w.toFixed(1)));
+        }
+
+        items.forEach(w => {
+            const div = document.createElement('div');
+            div.className = 'picker-item';
+            div.dataset.value = w;
+            div.textContent = w.toFixed(1) + ' kg';
+            pickerList.appendChild(div);
+        });
+
+        const defaultWeight = 60.0;
+        const defaultIndex = items.indexOf(defaultWeight);
+        if (defaultIndex !== -1) {
+            pickerList.scrollTop = defaultIndex * 40;
+        }
+
+        const salvaBozzaDebounced = debounce(() => salvaBozza(), 400);
+        window._salvaBozzaDebounced = salvaBozzaDebounced;
+
+        window.handlePickerScroll = function () {
+            const index = Math.round(pickerList.scrollTop / 40);
+            const allItems = pickerList.querySelectorAll('.picker-item');
+            allItems.forEach((el, idx) => {
+                if (idx === index) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+            salvaBozzaDebounced();
+        };
+        handlePickerScroll();
+
+        // ---- NOTE: autosalvataggio bozza mentre si scrive ----
+        const notesEl = document.getElementById('diary-notes');
+        notesEl.addEventListener('input', salvaBozzaDebounced);
+
+        // ---- GRAFICO PESO (Chart.js) ----
+        const ctx = document.getElementById('weightChart').getContext('2d');
+        weightChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Peso (kg)',
+                    data: [],
+                    borderColor: '#27ae60',
+                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { grid: { color: '#f1f3f5' } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        // ---- CARICAMENTO DATI ALL'AVVIO (bozza locale, cloud, storico peso) ----
+        caricaStoricoPeso();
+        caricaStatoIniziale();
+    }
+
+    // ==========================================
+    // BOZZA LOCALE (localStorage) — evita di perdere le selezioni
+    // fatte durante la giornata anche se non si preme "Salva nel Cloud"
+    // ==========================================
+    function raccogliStatoCorrente() {
+        const dietCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+            .filter(cb => cb.checked)
+            .map(cb => {
+                const span = cb.parentElement.querySelector('span');
+                return span ? span.textContent.trim() : cb.id;
+            });
+
+        const evac = document.querySelector('[data-group="evacuazione"] .active');
+        const bristol = document.querySelector('[data-group="bristol"] .active');
+        const gonfiore = document.querySelector('[data-group="gonfiore"] .active');
+        const allenamento = document.querySelector('[data-group="allenamento"] .active');
+        const sonno = document.querySelector('[data-group="sonno"] .active');
+        const acqua = document.querySelector('[data-group="acqua"] .active');
+        const pesoEl = document.querySelector('#weight-picker .picker-item.selected');
+        const notesEl = document.getElementById('diary-notes');
+
+        return {
+            data: getDataOggi(),
+            kcal: parseInt(document.getElementById('total-kcal').textContent, 10) || 0,
+            proteine: document.getElementById('total-prot').textContent,
+            pasti_selezionati: dietCbs,
+            evacuazione: evac ? evac.textContent.trim() : null,
+            bristol: bristol ? bristol.textContent.trim() : null,
+            gonfiore: gonfiore ? gonfiore.textContent.trim() : null,
+            allenamento: allenamento ? allenamento.textContent.trim() : null,
+            sonno: sonno ? sonno.textContent.trim() : null,
+            acqua: acqua ? acqua.textContent.trim() : null,
+            peso: pesoEl ? parseFloat(pesoEl.dataset.value) : null,
+            note: notesEl ? notesEl.value : ''
+        };
+    }
+
+    function salvaBozza() {
+        try {
+            const stato = raccogliStatoCorrente();
+            localStorage.setItem('bozza-' + stato.data, JSON.stringify(stato));
+        } catch (e) {
+            console.error('Errore salvataggio bozza locale:', e);
+        }
+    }
+    window.salvaBozza = salvaBozza;
+
+    function inizializzaSostitutivi() {
+        document.querySelectorAll('.meal-replace-checkbox').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const cardId = cb.dataset.targetCard;
+                const card = document.getElementById(cardId);
+                if (!card) return;
+                const altre = card.querySelectorAll('input[type="checkbox"]:not(.meal-replace-checkbox)');
+                altre.forEach(o => {
+                    const item = o.closest('.check-item');
+                    if (cb.checked) {
+                        o.checked = false;
+                        o.disabled = true;
+                        if (item) item.classList.add('disabled');
+                    } else {
+                        o.disabled = false;
+                        if (item) item.classList.remove('disabled');
+                    }
+                });
+                if (window.updateTotalsAndRules) window.updateTotalsAndRules();
+                salvaBozza();
+            });
+        });
+    }
+
+    function clickMatchingButton(groupName, valore) {
+        if (!valore) return;
+        const group = document.querySelector(`[data-group="${groupName}"]`);
+        if (!group) return;
+        const btn = Array.from(group.querySelectorAll('.btn-option'))
+            .find(b => b.textContent.trim() === String(valore).trim());
+        if (btn) btn.click();
+    }
+
+    function selezionaPesoPicker(valore) {
+        const pickerList = document.getElementById('weight-picker');
+        if (!pickerList) return;
+        const allItems = pickerList.querySelectorAll('.picker-item');
+        let target = null;
+        allItems.forEach(el => {
+            if (Math.abs(parseFloat(el.dataset.value) - valore) < 0.05) target = el;
+        });
+        if (target) {
+            pickerList.scrollTop = target.offsetTop - 40;
+            handlePickerScroll();
+        }
+    }
+
+    function applicaStato(stato) {
+        if (!stato) return;
+
+        if (Array.isArray(stato.pasti_selezionati)) {
+            stato.pasti_selezionati.forEach(valore => {
+                // Compatibilità con vecchie bozze salvate come id posizionale (es. "diet-cb-3")
+                let match = document.getElementById(valore);
+                if (!match) {
+                    match = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+                        .find(cb => {
+                            const span = cb.parentElement.querySelector('span');
+                            return span && span.textContent.trim() === String(valore).trim();
+                        });
+                }
+                if (match) match.checked = true;
+            });
+            if (window.updateTotalsAndRules) window.updateTotalsAndRules();
+        }
+
+        // L'evacuazione va cliccata prima, altrimenti la sezione Bristol resta nascosta
+        clickMatchingButton('evacuazione', stato.evacuazione);
+        setTimeout(() => clickMatchingButton('bristol', stato.bristol), 0);
+        clickMatchingButton('gonfiore', stato.gonfiore);
+        clickMatchingButton('allenamento', stato.allenamento);
+        clickMatchingButton('sonno', stato.sonno);
+        clickMatchingButton('acqua', stato.acqua);
+
+        if (stato.peso != null && !isNaN(stato.peso)) {
+            selezionaPesoPicker(parseFloat(stato.peso));
+        }
+
+        const notesEl = document.getElementById('diary-notes');
+        if (notesEl && stato.note) {
+            notesEl.value = stato.note;
+        }
+    }
+
+    async function caricaDatiOggiDalCloud(dataOggi) {
+        if (!supabaseClient || !currentUser) return null;
+        try {
+            const { data, error } = await supabaseClient
+                .from('diario')
+                .select('*')
+                .eq('data', dataOggi)
+                .eq('user_id', currentUser.id)
+                .order('id', { ascending: false })
+                .limit(1);
+            if (error) {
+                console.error('Errore lettura dati odierni dal cloud:', error);
+                return null;
+            }
+            return (data && data.length) ? data[0] : null;
+        } catch (e) {
+            console.error('Errore lettura dati odierni dal cloud:', e);
+            return null;
+        }
+    }
+
+    async function caricaStatoIniziale() {
+        const dataOggi = getDataOggi();
+        const bozzaLocale = localStorage.getItem('bozza-' + dataOggi);
+
+        if (bozzaLocale) {
+            try {
+                applicaStato(JSON.parse(bozzaLocale));
+                mostraAvviso('Bozza di oggi ripristinata.');
+                return;
+            } catch (e) {
+                console.error('Bozza locale corrotta, provo dal cloud:', e);
+            }
+        }
+
+        const datiCloud = await caricaDatiOggiDalCloud(dataOggi);
+        if (datiCloud) {
+            applicaStato(datiCloud);
+            mostraAvviso('Dati di oggi già salvati nel Cloud: ripristinati.');
+        }
+    }
+
+    async function caricaStoricoPeso() {
+        const emptyNote = document.getElementById('chart-empty-note');
+        if (!supabaseClient) {
+            if (emptyNote) emptyNote.style.display = 'block';
+            return;
+        }
+        if (!currentUser) {
+            if (emptyNote) emptyNote.style.display = 'block';
+            return;
+        }
+        try {
+            const { data, error } = await supabaseClient
+                .from('diario')
+                .select('data, peso')
+                .eq('user_id', currentUser.id)
+                .not('peso', 'is', null)
+                .order('data', { ascending: true })
+                .limit(30);
+
+            if (error) {
+                console.error('Errore caricamento storico peso:', error);
+                if (emptyNote) emptyNote.style.display = 'block';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                if (emptyNote) emptyNote.style.display = 'block';
+                return;
+            }
+
+            if (emptyNote) emptyNote.style.display = 'none';
+
+            const labels = data.map(r => formatDataBreve(r.data));
+            const valori = data.map(r => r.peso);
+
+            weightChartInstance.data.labels = labels;
+            weightChartInstance.data.datasets[0].data = valori;
+            weightChartInstance.update();
+        } catch (e) {
+            console.error('Errore caricamento storico peso:', e);
+            if (emptyNote) emptyNote.style.display = 'block';
+        }
+    }
+
+    // ---- FUNZIONI SELEZIONE SINTOMI ----
+    function selectEvacuazione(val, btn) {
+        const group = btn.parentElement;
+        group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const bristolSec = document.getElementById('bristol-section');
+        if (val === 'Sì') {
+            bristolSec.style.display = 'block';
+        } else {
+            bristolSec.style.display = 'none';
+            document.querySelectorAll('[data-group="bristol"] .btn-option').forEach(b => b.classList.remove('active'));
+            document.getElementById('bristol-desc').style.display = 'none';
+        }
+        salvaBozza();
+    }
+
+    function selectBristol(val, desc, btn) {
+        const group = btn.parentElement;
+        group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const descEl = document.getElementById('bristol-desc');
+        descEl.textContent = val + ': ' + desc;
+        descEl.style.display = 'block';
+        salvaBozza();
+    }
+
+    function selectGonfiore(val, desc, btn) {
+        const group = btn.parentElement;
+        group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const descEl = document.getElementById('gonfiore-desc');
+        descEl.textContent = 'Gonfiore ' + val + ': ' + desc;
+        descEl.style.display = 'block';
+        salvaBozza();
+    }
+
+    function selectOption(btn) {
+        const group = btn.parentElement;
+        group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        salvaBozza();
+    }
+
+    // ---- FUNZIONE SALVATAGGIO CLOUD AGGIORNATA ----
+    async function salvaNelCloud() {
+        if (!supabaseClient) {
+            alert("Errore: Connessione a Supabase non inizializzata.");
+            return;
+        }
+
+        if (!currentUser) {
+            alert("Devi effettuare l'accesso per salvare i dati.");
+            return;
+        }
+
+        const stato = raccogliStatoCorrente();
+
+        // Oggetto dati da inviare a Supabase
+        const datiDaSalvare = {
+            user_id: currentUser.id,
+            data: stato.data,
+            kcal: stato.kcal,
+            proteine: stato.proteine,
+            pasti_selezionati: stato.pasti_selezionati,
+            evacuazione: stato.evacuazione,
+            bristol: stato.bristol,
+            gonfiore: stato.gonfiore,
+            allenamento: stato.allenamento,
+            sonno: stato.sonno,
+            acqua: stato.acqua,
+            peso: stato.peso,
+            note: stato.note
+        };
+
+        const { data, error } = await supabaseClient
+            .from('diario')
+            .upsert([datiDaSalvare], { onConflict: 'user_id,data' });
+
+        if (error) {
+            console.error("Errore durante il salvataggio:", error);
+            alert("Errore nel salvataggio su Supabase: " + error.message);
+        } else {
+            alert("☁️ Dati salvati con successo nel Cloud!");
+            salvaBozza();
+            caricaStoricoPeso();
+        }
+    }
+
+    // ---- FUNZIONE STAMPA PDF ----
+    function elencoPastiSelezionati() {
+        const sezioni = [
+            { id: 'sec-colazione', titolo: 'Colazione' },
+            { id: 'sec-mattina', titolo: 'Metà Mattina' },
+            { id: 'sec-pranzo', titolo: 'Pranzo' },
+            { id: 'sec-merenda', titolo: 'Merenda' },
+            { id: 'sec-cena', titolo: 'Cena' },
+            { id: 'sec-budget', titolo: 'Extra' }
+        ];
+
+        let html = '';
+        sezioni.forEach(sez => {
+            const card = document.getElementById(sez.id);
+            if (!card) return;
+            const selezionati = Array.from(card.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(cb => {
+                    const span = cb.parentElement.querySelector('span');
+                    return span ? span.textContent.trim() : '';
+                })
+                .filter(Boolean);
+
+            if (selezionati.length > 0) {
+                html += `<li><strong>${sez.titolo}:</strong> ${selezionati.join(' + ')}</li>`;
+            }
+        });
+
+        return html || '<li><em>Nessun pasto selezionato.</em></li>';
+    }
+
+    function generaStampaSintetica() {
+        const container = document.getElementById('print-summary');
+        const oggi = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
+
+        const kcal = document.getElementById('total-kcal').textContent;
+        const prot = document.getElementById('total-prot').textContent;
+        const note = document.getElementById('diary-notes').value || 'Nessuna nota inserita.';
+
+        const evac = document.querySelector('[data-group="evacuazione"] .active');
+        const bristol = document.querySelector('[data-group="bristol"] .active');
+        const gonfiore = document.querySelector('[data-group="gonfiore"] .active');
+        const allenamento = document.querySelector('[data-group="allenamento"] .active');
+        const sonno = document.querySelector('[data-group="sonno"] .active');
+        const acqua = document.querySelector('[data-group="acqua"] .active');
+        const peso = document.querySelector('#weight-picker .picker-item.selected');
+
+        let html = `
+            <h1>Resoconto Giornaliero - Piano Nutrizionale</h1>
+            <div class="pdate">Data: ${oggi}</div>
+            
+            <div class="summary-box">
+                <strong>Totale kcal:</strong> ${kcal} kcal &nbsp;|&nbsp; <strong>Proteine:</strong> ${prot}
+                ${peso ? `<br><strong>Peso registrato:</strong> ${peso.textContent}` : ''}
+            </div>
+
+            <h2>Pasti della Giornata</h2>
+            <ul>
+                ${elencoPastiSelezionati()}
+            </ul>
+
+            <h2>Diario Sintomi & Abitudini</h2>
+            <ul>
+                <li><strong>Evacuazione:</strong> ${evac ? evac.textContent : 'Non specificato'} ${bristol ? `(${bristol.textContent})` : ''}</li>
+                <li><strong>Gonfiore Addominale:</strong> ${gonfiore ? gonfiore.textContent : 'Non specificato'}</li>
+                <li><strong>Allenamento:</strong> ${allenamento ? allenamento.textContent : 'Non specificato'}</li>
+                <li><strong>Sonno:</strong> ${sonno ? sonno.textContent : 'Non specificato'}</li>
+                <li><strong>Acqua:</strong> ${acqua ? acqua.textContent : 'Non specificato'}</li>
+            </ul>
+
+            <h2>Note della Giornata</h2>
+            <div class="notes-box">${note}</div>
+        `;
+
+        container.innerHTML = html;
+        window.print();
+    }
+</script>
+</body>
+</html>
