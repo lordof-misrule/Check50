@@ -634,6 +634,7 @@
             <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" name="colazione"><span>French Toast: 60g Pane + 1 Uovo + 120-150g Albume + 20g Marmellata</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" name="colazione"><span>Pancake: 50g Farina + 1 Uovo + 120-150g Albume + 20g Marmellata</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="18" name="colazione"><span>60g Pane + 100g Ricotta di capra + 15-20g Marmellata <span class="badge-max">(max 1×/settimana)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="5" name="colazione"><span>Colazione fuori (es. dolce/torta + caffè al bar)</span></label>
         </div>
     </div>
 
@@ -660,6 +661,8 @@
             <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>60-70g Pasta/Riso/Grano Saraceno + 100-120g Tonno al naturale</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>60-70g Pasta/Riso/Grano Saraceno + 100-120g Pollo / Tacchino</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="410" data-prot="32" name="pranzo-main"><span>60-70g Pasta/Riso/Grano Saraceno + 2 Uova + 150g Albume</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" name="pranzo-main"><span>Pranzo fuori – in linea con il piano (proteine, verdure, pane)</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="650" data-prot="20" name="pranzo-main"><span>Pranzo fuori – libero (ristorante)</span></label>
         </div>
         <div class="section-subtitle">Contorno e Condimento Pranzo</div>
         <div class="checkbox-group">
@@ -711,18 +714,25 @@
             <label class="check-item" id="item-olio-5"><input type="checkbox" data-kcal="45" data-prot="0" id="check-olio-5" name="cena-olio"><span>5g Olio EVO</span></label>
             <label class="check-item" id="item-olio-10"><input type="checkbox" data-kcal="90" data-prot="0" id="check-olio-10" name="cena-olio"><span>10g Olio EVO</span></label>
         </div>
+        <div class="section-subtitle">Oppure: Cena Fuori (sostituisce l'intero pasto)</div>
+        <div class="checkbox-group">
+            <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Cena fuori – in linea con il piano (proteine, verdure, pane)</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="650" data-prot="20" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Cena fuori – libero (ristorante)</span></label>
+        </div>
     </div>
 
     <div class="card" id="sec-budget">
         <div class="card-header">
-            <span class="card-title">Budget Flessibile Settimanale</span>
-            <span class="card-meta">~600-650 kcal totali / sett</span>
+            <span class="card-title">Extra</span>
+            <span class="card-meta">Da usare con moderazione</span>
         </div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="100" data-prot="0"><span>Bicchiere di vino</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="280" data-prot="3"><span>Brioche / dolce / barretta / snack</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="250" data-prot="2"><span>Aperitivo</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="500" data-prot="20"><span>Pasto al ristorante</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="280" data-prot="3"><span>Vino fermo (1 bicchiere) + stuzzichini (olive/patatine/taralli)</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="280" data-prot="4"><span>Brioche</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="250" data-prot="3"><span>Barretta dolce (Bounty/Twix/Mars e simili)</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="200" data-prot="20"><span>Barretta proteica</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="130" data-prot="4"><span>Pane extra</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="50" data-prot="0"><span>Marmellata extra</span></label>
         </div>
     </div>
 
@@ -989,28 +999,32 @@
             let kcal = 0;
             let prot = 0;
 
-            const selectedCenaProt = document.querySelector('input[name="cena-prot"]:checked');
-            const fatType = selectedCenaProt ? selectedCenaProt.dataset.fat : null;
-            const hasNoci = checkNoci.checked;
+            const cenaFuoriSelezionata = document.querySelector('input[name="cena-fuori"]:checked');
 
-            if (fatType === 'grassa') {
-                itemOlio5.classList.add('disabled');
-                itemOlio10.classList.add('disabled');
-                checkOlio5.checked = false;
-                checkOlio10.checked = false;
-                checkOlio5.disabled = true;
-                checkOlio10.disabled = true;
-            } else if (fatType === 'media' || hasNoci) {
-                itemOlio5.classList.remove('disabled');
-                itemOlio10.classList.add('disabled');
-                checkOlio10.checked = false;
-                checkOlio5.disabled = false;
-                checkOlio10.disabled = true;
-            } else {
-                itemOlio5.classList.remove('disabled');
-                itemOlio10.classList.remove('disabled');
-                checkOlio5.disabled = false;
-                checkOlio10.disabled = false;
+            if (!cenaFuoriSelezionata) {
+                const selectedCenaProt = document.querySelector('input[name="cena-prot"]:checked');
+                const fatType = selectedCenaProt ? selectedCenaProt.dataset.fat : null;
+                const hasNoci = checkNoci.checked;
+
+                if (fatType === 'grassa') {
+                    itemOlio5.classList.add('disabled');
+                    itemOlio10.classList.add('disabled');
+                    checkOlio5.checked = false;
+                    checkOlio10.checked = false;
+                    checkOlio5.disabled = true;
+                    checkOlio10.disabled = true;
+                } else if (fatType === 'media' || hasNoci) {
+                    itemOlio5.classList.remove('disabled');
+                    itemOlio10.classList.add('disabled');
+                    checkOlio10.checked = false;
+                    checkOlio5.disabled = false;
+                    checkOlio10.disabled = true;
+                } else {
+                    itemOlio5.classList.remove('disabled');
+                    itemOlio10.classList.remove('disabled');
+                    checkOlio5.disabled = false;
+                    checkOlio10.disabled = false;
+                }
             }
 
             checkboxes.forEach(cb => {
@@ -1038,6 +1052,7 @@
         });
 
         updateTotalsAndRules();
+        inizializzaSostitutivi();
 
         // ---- CICLO ORMONALE ----
         const dateInput = document.getElementById('last-period-input');
@@ -1235,6 +1250,30 @@
         }
     }
     window.salvaBozza = salvaBozza;
+
+    function inizializzaSostitutivi() {
+        document.querySelectorAll('.meal-replace-checkbox').forEach(cb => {
+            cb.addEventListener('change', () => {
+                const cardId = cb.dataset.targetCard;
+                const card = document.getElementById(cardId);
+                if (!card) return;
+                const altre = card.querySelectorAll('input[type="checkbox"]:not(.meal-replace-checkbox)');
+                altre.forEach(o => {
+                    const item = o.closest('.check-item');
+                    if (cb.checked) {
+                        o.checked = false;
+                        o.disabled = true;
+                        if (item) item.classList.add('disabled');
+                    } else {
+                        o.disabled = false;
+                        if (item) item.classList.remove('disabled');
+                    }
+                });
+                if (window.updateTotalsAndRules) window.updateTotalsAndRules();
+                salvaBozza();
+            });
+        });
+    }
 
     function clickMatchingButton(groupName, valore) {
         if (!valore) return;
