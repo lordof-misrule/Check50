@@ -787,9 +787,9 @@
 
         <div class="section-subtitle">Acqua Bevuta</div>
         <div class="button-group" data-group="acqua">
-            <button type="button" class="btn-option" onclick="selectOption(this)">&lt; 1.8 L</button>
-            <button type="button" class="btn-option" onclick="selectOption(this)">1.8 L</button>
-            <button type="button" class="btn-option" onclick="selectOption(this)">&ge; 2.0 L</button>
+            <button type="button" class="btn-option" onclick="selectOption(this)">&lt; < 1.5 L</button>
+            <button type="button" class="btn-option" onclick="selectOption(this)"1.5 L</button>
+            <button type="button" class="btn-option" onclick="selectOption(this)"1.8 L</button>
         </div>
 
         <div class="section-subtitle">Peso del Mattino (kg)</div>
@@ -1214,7 +1214,10 @@
     function raccogliStatoCorrente() {
         const dietCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'))
             .filter(cb => cb.checked)
-            .map(cb => cb.id);
+            .map(cb => {
+                const span = cb.parentElement.querySelector('span');
+                return span ? span.textContent.trim() : cb.id;
+            });
 
         const evac = document.querySelector('[data-group="evacuazione"] .active');
         const bristol = document.querySelector('[data-group="bristol"] .active');
@@ -1302,9 +1305,17 @@
         if (!stato) return;
 
         if (Array.isArray(stato.pasti_selezionati)) {
-            stato.pasti_selezionati.forEach(id => {
-                const cb = document.getElementById(id);
-                if (cb) cb.checked = true;
+            stato.pasti_selezionati.forEach(valore => {
+                // Compatibilità con vecchie bozze salvate come id posizionale (es. "diet-cb-3")
+                let match = document.getElementById(valore);
+                if (!match) {
+                    match = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+                        .find(cb => {
+                            const span = cb.parentElement.querySelector('span');
+                            return span && span.textContent.trim() === String(valore).trim();
+                        });
+                }
+                if (match) match.checked = true;
             });
             if (window.updateTotalsAndRules) window.updateTotalsAndRules();
         }
