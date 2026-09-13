@@ -595,7 +595,7 @@
 
     <div class="card">
         <div class="card-header">
-            <span class="card-title">Andamento Peso (Storico reale)</span>
+            <span class="card-title">Andamento Peso</span>
         </div>
         <div class="chart-container">
             <canvas id="weightChart"></canvas>
@@ -618,7 +618,7 @@
             <div class="phase-box" id="phase-m">Mestruale<br><small>G1-5</small></div>
             <div class="phase-box" id="phase-f">Follicolare<br><small>G6-13</small></div>
             <div class="phase-box" id="phase-o">Ovulazione<br><small>G14-16</small></div>
-            <div class="phase-box" id="phase-l">Luteale<br><small>G17-28</small></div>
+            <div class="phase-box" id="phase-l">Luteale<br><small>G17-29</small></div>
         </div>
         <div class="cycle-note" id="cycle-advice">Inserisci la data di inizio dell'ultimo ciclo per attivare il monitoraggio.</div>
     </div>
@@ -832,7 +832,7 @@
 
     let weightChartInstance = null;
 
-    const CYCLE_LENGTH = 28;
+    const CYCLE_LENGTH_DEFAULT = 29;
     const STORAGE_KEY = 'last-period-start-date';
 
     // ==========================================
@@ -1059,6 +1059,8 @@
         const saveBtn = document.getElementById('save-period-btn');
         const saveMsg = document.getElementById('cycle-save-msg');
         let lastPeriodStart = null;
+        const cycleLength = CYCLE_LENGTH_DEFAULT; // fissa a 29 giorni
+        const GRACE_PERIOD_DAYS = 10; // tolleranza per ritardi prima di chiedere di aggiornare la data
 
         function parseDateInput(value) {
             const [y, m, d] = value.split('-').map(Number);
@@ -1085,9 +1087,9 @@
             const start = toDateOnly(lastPeriodStart);
             const daysSinceStart = Math.round((today - start) / (1000 * 60 * 60 * 24));
 
-            if (daysSinceStart >= 0 && daysSinceStart < CYCLE_LENGTH) {
+            if (daysSinceStart >= 0 && daysSinceStart < cycleLength) {
                 const cycleDay = daysSinceStart + 1;
-                const daysLeft = CYCLE_LENGTH - daysSinceStart;
+                const daysLeft = cycleLength - daysSinceStart;
                 badge.textContent = `-${daysLeft} gg al ciclo`;
 
                 if (cycleDay >= 1 && cycleDay <= 5) {
@@ -1103,9 +1105,14 @@
                     document.getElementById('phase-l').classList.add('active');
                     advice.textContent = "Fase Luteale: Possibile ritenzione o voglia di carboidrati. Gestire bene i minerali e l'idratazione.";
                 }
+            } else if (daysSinceStart >= cycleLength && daysSinceStart <= cycleLength + GRACE_PERIOD_DAYS) {
+                const ritardo = daysSinceStart - cycleLength + 1;
+                document.getElementById('phase-l').classList.add('active');
+                badge.textContent = `+${ritardo} gg di ritardo`;
+                advice.textContent = "Fase premestruale prolungata: possibile tensione al seno, irritabilità, gonfiore addominale accentuato e stanchezza.";
             } else {
                 badge.textContent = 'Ciclo da aggiornare';
-                advice.textContent = "La data inserita è antecedente a un ciclo completo. Aggiorna la data di inizio.";
+                advice.textContent = "Sono passati più di " + (cycleLength + GRACE_PERIOD_DAYS) + " giorni dall'ultimo ciclo registrato. Se nel frattempo è arrivato, aggiorna la data di inizio qui sopra.";
             }
         }
 
