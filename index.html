@@ -1568,6 +1568,15 @@
         const acqua = document.querySelector('[data-group="acqua"] .active');
         const peso = document.querySelector('#weight-picker .picker-item.selected');
 
+        // Fase del ciclo (se una data è stata impostata)
+        const cicloBadge = document.getElementById('cycle-days-left');
+        const faseAttivaBox = document.querySelector('.phase-box.active');
+        let testoFaseCiclo = '';
+        if (cicloBadge && faseAttivaBox) {
+            const nomeFase = faseAttivaBox.childNodes[0].textContent.trim();
+            testoFaseCiclo = `${nomeFase} (${cicloBadge.textContent.trim()})`;
+        }
+
         let html = `
             <h1>Resoconto Giornaliero - Piano Nutrizionale</h1>
             <div class="pdate">Data: ${oggi}</div>
@@ -1575,6 +1584,7 @@
             <div class="summary-box">
                 <strong>Totale kcal:</strong> ${kcal} kcal &nbsp;|&nbsp; <strong>Proteine:</strong> ${prot}
                 ${peso ? `<br><strong>Peso registrato:</strong> ${peso.textContent}` : ''}
+                ${testoFaseCiclo ? `<br><strong>Fase del ciclo:</strong> ${testoFaseCiclo}` : ''}
             </div>
 
             <h2>Pasti della Giornata</h2>
