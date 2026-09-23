@@ -96,12 +96,6 @@
             border-color: var(--primary);
             color: #fff;
         }
-        .target-note {
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 14px;
-        }
 
         /* Fixed Top Summary Bar */
         .summary-bar {
@@ -308,7 +302,6 @@
     </header>
 
     <div class="daytype-tabs" id="daytype-tabs"></div>
-    <div class="target-note" id="target-note"></div>
 
     <div class="summary-bar">
         <div class="summary-item">
@@ -367,13 +360,13 @@
 
     <div class="card" id="sec-minipasto-pt">
         <div class="card-header">
-            <span class="card-title">Mini-pasto pre-PT</span>
-            <span class="card-meta">60-120 min prima dell'allenamento</span>
+            <span class="card-title">Spuntino</span>
+            <span class="card-meta">Pre-PT o quando serve</span>
         </div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="100" data-prot="1" name="minipasto-carb"><span>Banana</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="116" data-prot="3" name="minipasto-carb"><span>Crackers (un pacchetto)</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="160" data-prot="4" id="check-noci"><span>Noci 25g</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="100" data-prot="1" name="minipasto-carb"><span>Banana <span class="badge-max">(pre-PT)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="116" data-prot="3" name="minipasto-carb"><span>Crackers, un pacchetto <span class="badge-max">(pre-PT)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="180" data-prot="4" id="check-noci"><span>Noci 25g + frutta <span class="badge-max">(2-3×/settimana)</span></span></label>
         </div>
         <div id="noci-counter" class="counter-note"></div>
     </div>
@@ -616,10 +609,8 @@
     }
 
     function applyDaytype(key) {
-        const d = DAY_TYPES[key] || DAY_TYPES.riposo;
-        document.getElementById('target-note').textContent = 'Target: ' + d.target;
-        const sec = document.getElementById('sec-minipasto-pt');
-        if (sec) sec.style.display = d.showMinipasto ? 'block' : 'none';
+        // Lo spuntino ora è sempre visibile: il tipo di giornata resta salvato
+        // solo per il resoconto stampato, senza nascondere sezioni.
     }
 
     // ==========================================
