@@ -2,12 +2,13 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Checklist Piano Nutrizionale & Diario Sintomi</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
+            box-sizing: border-box;
             --primary: #2c3e50;
             --accent: #27ae60;
             --pink: #d63384;
@@ -16,7 +17,11 @@
             --border: #e9ecef;
             --text: #333333;
             --text-muted: #6c757d;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
+        * { box-sizing: border-box; }
+        html { scroll-padding-top: env(safe-area-inset-top, 0px); }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -51,7 +56,7 @@
         #toast {
             display: none;
             position: fixed;
-            top: 10px;
+            top: calc(10px + env(safe-area-inset-top, 0px));
             left: 50%;
             transform: translateX(-50%);
             background: var(--primary);
@@ -65,10 +70,43 @@
             text-align: center;
         }
 
+        /* Selettore tipo giornata */
+        .daytype-tabs {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            margin-bottom: 14px;
+            padding-bottom: 2px;
+        }
+        .daytype-tab {
+            flex: 0 0 auto;
+            padding: 9px 14px;
+            border-radius: 100px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .daytype-tab.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+        }
+        .target-note {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
         /* Fixed Top Summary Bar */
         .summary-bar {
             position: sticky;
-            top: 10px;
+            top: calc(10px + env(safe-area-inset-top, 0px));
             z-index: 100;
             background: var(--primary);
             color: white;
@@ -81,24 +119,10 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .summary-item {
-            text-align: center;
-        }
+        .summary-item { text-align: center; }
+        .summary-value { font-size: 1.3rem; font-weight: 700; color: #2ecc71; }
+        .summary-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; }
 
-        .summary-value {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #2ecc71;
-        }
-
-        .summary-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.9;
-        }
-
-        /* Card Component */
         .card {
             background: var(--card-bg);
             border-radius: 12px;
@@ -117,17 +141,12 @@
             margin-bottom: 14px;
         }
 
-        .card-title {
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--primary);
-        }
+        .card-header.toggleable { cursor: pointer; margin-bottom: 0; border-bottom: none; }
+        .card-header.toggleable.open { border-bottom: 2px solid var(--border); margin-bottom: 14px; }
 
-        .card-meta {
-            font-size: 0.8rem;
-            color: var(--accent);
-            font-weight: 600;
-        }
+        .card-title { font-weight: 700; font-size: 1.1rem; color: var(--primary); }
+        .card-meta { font-size: 0.8rem; color: var(--accent); font-weight: 600; }
+        .chevron { font-size: 0.8rem; color: var(--text-muted); margin-left: 6px; }
 
         .section-subtitle {
             font-size: 0.85rem;
@@ -138,11 +157,7 @@
             margin: 14px 0 8px 0;
         }
 
-        .checkbox-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        .checkbox-group { display: flex; flex-direction: column; gap: 8px; }
 
         label.check-item {
             display: flex;
@@ -153,394 +168,104 @@
             user-select: none;
             padding: 4px 0;
         }
+        label.check-item.disabled { opacity: 0.4; pointer-events: none; text-decoration: line-through; }
+        label.check-item input[type="checkbox"] { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--accent); cursor: pointer; }
 
-        label.check-item.disabled {
-            opacity: 0.4;
-            pointer-events: none;
-            text-decoration: line-through;
-        }
-
-        label.check-item input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            margin-top: 2px;
-            accent-color: var(--accent);
-            cursor: pointer;
-        }
-
-        /* Cycle Component Styling */
-        .cycle-card {
-            border-left: 6px solid var(--pink);
-        }
-
-        .cycle-status {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .cycle-days-badge {
-            background: #fce4ec;
-            color: var(--pink);
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
-
-        .cycle-phases {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 4px;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .phase-box {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 6px 2px;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .phase-box.active {
-            background: var(--pink);
-            color: white;
-            border-color: var(--pink);
-            font-weight: bold;
-        }
-
-        .cycle-note {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-style: italic;
-            margin-top: 6px;
-        }
-
-        .cycle-input-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-            flex-wrap: wrap;
-        }
-
-        .cycle-input-row label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        .cycle-input-row input[type="date"] {
-            flex: 1;
-            min-width: 140px;
-            padding: 6px 8px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 0.85rem;
-        }
-
-        .btn-save-period {
-            background: var(--pink);
-            color: white;
-            border: none;
-            padding: 7px 14px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .btn-save-period:hover {
-            opacity: 0.9;
-        }
-
-        .cycle-save-msg {
-            font-size: 0.75rem;
+        .counter-note {
+            font-size: 0.78rem;
             color: var(--accent);
-            min-height: 14px;
-            margin-bottom: 8px;
+            background: #eafaf1;
+            border-radius: 6px;
+            padding: 4px 8px;
+            margin: 6px 0 4px 0;
+            display: inline-block;
         }
 
-        /* STILI DIARIO SINTOMI */
-        .button-group {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
+        /* Cycle Component */
+        .cycle-card { border-left: 6px solid var(--pink); }
+        .cycle-status { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 12px; }
+        .cycle-days-badge { background: #fce4ec; color: var(--pink); padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; }
+        .cycle-phases { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; text-align: center; margin-bottom: 10px; }
+        .phase-box { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 6px 2px; font-size: 0.75rem; color: var(--text-muted); }
+        .phase-box.active { background: var(--pink); color: white; border-color: var(--pink); font-weight: bold; }
+        .cycle-note { font-size: 0.8rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+        .cycle-input-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+        .cycle-input-row label { font-size: 0.8rem; color: var(--text-muted); }
+        .cycle-input-row input[type="date"] { flex: 1; min-width: 140px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 0.85rem; }
+        .btn-save-period { background: var(--pink); color: white; border: none; padding: 7px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .btn-save-period:hover { opacity: 0.9; }
+        .cycle-save-msg { font-size: 0.75rem; color: var(--accent); min-height: 14px; margin-bottom: 8px; }
 
+        .button-group { display: flex; gap: 8px; flex-wrap: wrap; }
         .btn-option {
-            flex: 1;
-            min-width: 60px;
-            padding: 10px 8px;
-            border: 1px solid #cbd5e0;
-            border-radius: 8px;
-            background-color: var(--card-bg);
-            color: var(--text-muted);
-            font-weight: 500;
-            font-size: 0.9rem;
-            cursor: pointer;
-            text-align: center;
+            flex: 1; min-width: 60px; padding: 10px 8px;
+            border: 1px solid #cbd5e0; border-radius: 8px;
+            background-color: var(--card-bg); color: var(--text-muted);
+            font-weight: 500; font-size: 0.9rem; cursor: pointer; text-align: center;
             transition: all 0.2s ease;
         }
-
-        .btn-option:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .btn-option.active {
-            background-color: #e8f8f5;
-            border-color: var(--accent);
-            color: #1b8744;
-            font-weight: 600;
-        }
+        .btn-option:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-option.active { background-color: #e8f8f5; border-color: var(--accent); color: #1b8744; font-weight: 600; }
 
         .description-text {
-            margin-top: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-style: italic;
-            background-color: var(--bg);
-            padding: 8px 12px;
-            border-left: 3px solid var(--accent);
-            border-radius: 4px;
-            display: none;
+            margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); font-style: italic;
+            background-color: var(--bg); padding: 8px 12px; border-left: 3px solid var(--accent);
+            border-radius: 4px; display: none;
         }
+        #bristol-section { display: none; }
 
-        #bristol-section {
-            display: none;
-        }
-
-        /* Wheel Picker Styling (Peso) */
-        .picker-container {
-            position: relative;
-            height: 120px;
-            overflow: hidden;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-        }
-
-        .picker-list {
-            height: 100%;
-            overflow-y: scroll;
-            scroll-snap-type: y mandatory;
-            padding: 40px 0;
-            box-sizing: border-box;
-            scrollbar-width: none;
-        }
-
-        .picker-list::-webkit-scrollbar {
-            display: none;
-        }
-
-        .picker-item {
-            height: 40px;
-            line-height: 40px;
-            text-align: center;
-            font-size: 1.1rem;
-            color: #a0aec0;
-            scroll-snap-align: center;
-            transition: all 0.2s;
-        }
-
-        .picker-item.selected {
-            color: var(--primary);
-            font-weight: bold;
-            font-size: 1.25rem;
-        }
-
-        .picker-selection-highlight {
-            position: absolute;
-            top: 40px;
-            left: 0;
-            right: 0;
-            height: 40px;
-            border-top: 2px solid var(--accent);
-            border-bottom: 2px solid var(--accent);
-            background-color: rgba(39, 174, 96, 0.05);
-            pointer-events: none;
-        }
+        .picker-container { position: relative; height: 120px; overflow: hidden; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; }
+        .picker-list { height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; padding: 40px 0; box-sizing: border-box; scrollbar-width: none; }
+        .picker-list::-webkit-scrollbar { display: none; }
+        .picker-item { height: 40px; line-height: 40px; text-align: center; font-size: 1.1rem; color: #a0aec0; scroll-snap-align: center; transition: all 0.2s; }
+        .picker-item.selected { color: var(--primary); font-weight: bold; font-size: 1.25rem; }
+        .picker-selection-highlight { position: absolute; top: 40px; left: 0; right: 0; height: 40px; border-top: 2px solid var(--accent); border-bottom: 2px solid var(--accent); background-color: rgba(39, 174, 96, 0.05); pointer-events: none; }
 
         textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-sizing: border-box;
-            font-family: inherit;
-            font-size: 0.9rem;
-            margin-top: 6px;
-            resize: vertical;
-            min-height: 70px;
+            width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px;
+            box-sizing: border-box; font-family: inherit; font-size: 0.9rem; margin-top: 6px;
+            resize: vertical; min-height: 70px;
         }
+        textarea:focus { outline: none; border-color: var(--accent); }
 
-        textarea:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
+        .badge-max { font-size: 0.75rem; color: #d35400; font-weight: normal; }
 
-        .badge-max {
-            font-size: 0.75rem;
-            color: #d35400;
-            font-weight: normal;
-        }
-
-        /* Fixed Bottom Action Bar */
         .action-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #ffffff;
-            border-top: 1px solid var(--border);
-            padding: 12px 20px;
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            z-index: 1000;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: #ffffff; border-top: 1px solid var(--border);
+            padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+            display: flex; justify-content: center; gap: 12px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 1000;
         }
-
         .btn-action {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-            transition: background 0.2s;
+            background-color: var(--primary); color: white; border: none;
+            padding: 10px 18px; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1); transition: background 0.2s;
         }
+        .btn-action:hover { background-color: #1a252f; }
+        .btn-cloud { background-color: var(--accent); }
+        .btn-cloud:hover { background-color: #219653; }
 
-        .btn-action:hover {
-            background-color: #1a252f;
-        }
-
-        .btn-cloud {
-            background-color: var(--accent);
-        }
-        .btn-cloud:hover {
-            background-color: #219653;
-        }
-
-        /* Container Grafico Storico */
-        .chart-container {
-            position: relative;
-            height: 220px;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .chart-empty-note {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            font-style: italic;
-            text-align: center;
-            margin-top: 8px;
-            display: none;
-        }
+        .chart-container { position: relative; height: 220px; width: 100%; margin-top: 10px; }
+        .chart-empty-note { font-size: 0.8rem; color: var(--text-muted); font-style: italic; text-align: center; margin-top: 8px; display: none; }
 
         #auth-overlay {
-            display: flex;
-            position: fixed;
-            inset: 0;
-            background: rgba(44, 62, 80, 0.94);
-            z-index: 3000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            display: flex; position: fixed; inset: 0; background: rgba(44, 62, 80, 0.94);
+            z-index: 3000; align-items: center; justify-content: center; padding: 20px;
         }
-
-        .auth-box {
-            background: #fff;
-            border-radius: 14px;
-            padding: 28px 24px;
-            max-width: 340px;
-            width: 100%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .auth-box h2 {
-            margin: 0 0 4px 0;
-            font-size: 1.2rem;
-            color: var(--primary);
-            text-align: center;
-        }
-
-        .auth-box p {
-            margin: 0 0 18px 0;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            text-align: center;
-        }
-
-        .auth-box input {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            font-family: inherit;
-        }
-
-        #auth-error {
-            font-size: 0.8rem;
-            color: #c0392b;
-            margin-bottom: 10px;
-            min-height: 16px;
-        }
-
-        .auth-box button {
-            width: 100%;
-            border: none;
-            padding: 11px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-        }
-
+        .auth-box { background: #fff; border-radius: 14px; padding: 28px 24px; max-width: 340px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .auth-box h2 { margin: 0 0 4px 0; font-size: 1.2rem; color: var(--primary); text-align: center; }
+        .auth-box p { margin: 0 0 18px 0; font-size: 0.85rem; color: var(--text-muted); text-align: center; }
+        .auth-box input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; font-size: 0.9rem; font-family: inherit; }
+        #auth-error { font-size: 0.8rem; color: #c0392b; margin-bottom: 10px; min-height: 16px; }
+        .auth-box button { width: 100%; border: none; padding: 11px; border-radius: 8px; font-weight: 600; cursor: pointer; margin-bottom: 8px; font-size: 0.9rem; }
         .btn-auth-login { background: var(--primary); color: #fff; }
         .btn-auth-signup { background: var(--accent); color: #fff; margin-bottom: 0; }
+        #user-bar { display: none; justify-content: center; align-items: center; gap: 10px; margin-top: 8px; font-size: 0.8rem; color: var(--text-muted); }
+        #user-bar button { background: none; border: 1px solid var(--border); border-radius: 6px; padding: 3px 10px; cursor: pointer; font-size: 0.75rem; color: var(--text-muted); }
 
-        #user-bar {
-            display: none;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 8px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        #user-bar button {
-            background: none;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 3px 10px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        /* CONTAINER RESOCONTO STAMPA */
-        .print-summary-container {
-            display: none;
-        }
-
+        .print-summary-container { display: none; }
         @media print {
             body { background: white !important; padding: 0 !important; margin: 0 !important; }
             .container, .action-bar { display: none !important; }
@@ -581,6 +306,9 @@
             <button type="button" onclick="effettuaLogout()">Esci</button>
         </div>
     </header>
+
+    <div class="daytype-tabs" id="daytype-tabs"></div>
+    <div class="target-note" id="target-note"></div>
 
     <div class="summary-bar">
         <div class="summary-item">
@@ -625,69 +353,61 @@
 
     <div class="card" id="sec-colazione">
         <div class="card-header">
-            <span class="card-title">06:00 Colazione</span>
-            <span class="card-meta">~320-350 kcal | ~18-24g prot</span>
+            <span class="card-title">Colazione</span>
+            <span class="card-meta">~300-350 kcal | ~5-24g prot</span>
         </div>
         <div class="section-subtitle">Scegli 1 opzione</div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="340" data-prot="20" name="colazione"><span>60g Pane + 2 Uova + Kiwi / Mirtilli / Banana (150g)</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" name="colazione"><span>French Toast: 60g Pane + 1 Uovo + 120-150g Albume + 20g Marmellata</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" name="colazione"><span>Pancake: 50g Farina + 1 Uovo + 120-150g Albume + 20g Marmellata</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="18" name="colazione"><span>60g Pane + 100g Ricotta di capra + 15-20g Marmellata <span class="badge-max">(max 1×/settimana)</span></span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="5" name="colazione"><span>Colazione fuori (es. dolce/torta + caffè al bar)</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="340" data-prot="20" name="colazione"><span>Pane 50-60g + 2 Uova + Kiwi / Mirtilli / Banana</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" name="colazione"><span>French Toast: Pane 60g + 1 Uovo + Albume 120-150g + Marmellata 20g</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="18" name="colazione"><span>Pane 60-80g + Ricotta di capra 100g + Marmellata 15-20g <span class="badge-max">(max 1×/settimana)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="320" data-prot="5" name="colazione"><span>Cappuccino/caffè + brioche <span class="badge-max">(max 1×/settimana)</span></span></label>
         </div>
     </div>
 
-    <div class="card" id="sec-mattina">
+    <div class="card" id="sec-minipasto-pt">
         <div class="card-header">
-            <span class="card-title">10:30–11:00 Metà Mattina</span>
-            <span class="card-meta">~116 kcal | ~3g prot</span>
+            <span class="card-title">Mini-pasto pre-PT</span>
+            <span class="card-meta">60-120 min prima dell'allenamento</span>
         </div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="116" data-prot="3"><span>30g Cracker</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="100" data-prot="1" name="minipasto-carb"><span>Banana</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="116" data-prot="3" name="minipasto-carb"><span>Crackers (un pacchetto)</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="160" data-prot="4" id="check-noci"><span>Noci 25g</span></label>
         </div>
+        <div id="noci-counter" class="counter-note"></div>
     </div>
 
     <div class="card" id="sec-pranzo">
-        <div class="card-header">
-            <span class="card-title">13:00 Pranzo</span>
-            <span class="card-meta">~400-430 kcal | ~26-30g prot</span>
+        <div class="card-header toggleable" id="pranzo-header">
+            <span class="card-title">Pranzo <span class="chevron" id="pranzo-chevron">▸</span></span>
+            <span class="card-meta">Facoltativo</span>
         </div>
-        <div class="section-subtitle">Carboidrati & Proteine — scegli 1 opzione</div>
-        <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Panino 80g con 100-120g Tonno al naturale</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Panino 80g con 100-120g Pollo / Tacchino</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="410" data-prot="32" name="pranzo-main"><span>Panino 80g con 2 Uova + 150g Albume</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>60-70g Pasta/Riso/Grano Saraceno + 100-120g Tonno al naturale</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>60-70g Pasta/Riso/Grano Saraceno + 100-120g Pollo / Tacchino</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="410" data-prot="32" name="pranzo-main"><span>60-70g Pasta/Riso/Grano Saraceno + 2 Uova + 150g Albume</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" name="pranzo-main"><span>Pranzo fuori – in linea con il piano (proteine, verdure, pane)</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="650" data-prot="20" name="pranzo-main"><span>Pranzo fuori – libero (ristorante)</span></label>
-        </div>
-        <div class="section-subtitle">Contorno e Condimento Pranzo</div>
-        <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="30" data-prot="1"><span>100–150g Verdura cotta</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="45" data-prot="0"><span>5g Olio EVO</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="90" data-prot="0"><span>10g Olio EVO</span></label>
-        </div>
-    </div>
-
-    <div class="card" id="sec-merenda">
-        <div class="card-header">
-            <span class="card-title">16:00–16:30 Merenda</span>
-            <span class="card-meta">~150-175 kcal | ~2-3g prot</span>
-        </div>
-        <div class="section-subtitle">Componi il pasto</div>
-        <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="80" data-prot="1" name="merenda-frutta"><span>150g Mirtilli</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="100" data-prot="1" name="merenda-frutta"><span>150g Banana</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="65" data-prot="1" id="check-noci"><span>10g Noci</span></label>
+        <div id="pranzo-body" style="display:none;">
+            <div class="section-subtitle">Scegli 1 opzione</div>
+            <div class="checkbox-group">
+                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Panino 80g con 100-120g Tonno al naturale</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Panino 80g con 100-120g Pollo / Tacchino</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="410" data-prot="32" name="pranzo-main"><span>Panino 80g con 2 Uova + 150g Albume</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Pasta/Riso/Grano Saraceno 60-70g + Tonno 100-120g</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Pasta/Riso/Grano Saraceno 60-70g + Pollo / Tacchino 100-120g</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="410" data-prot="32" name="pranzo-main"><span>Pasta/Riso/Grano Saraceno 60-70g + 2 Uova + 150g Albume</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="400" data-prot="25" name="pranzo-main" data-toast="true"><span>Toast prosciutto e formaggio <span class="badge-max">(max 1×/settimana)</span></span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" name="pranzo-main"><span>Pranzo fuori – in linea con il piano</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="650" data-prot="20" name="pranzo-main"><span>Pranzo fuori – libero (ristorante)</span></label>
+            </div>
+            <div class="section-subtitle">Contorno e Condimento Pranzo</div>
+            <div class="checkbox-group">
+                <label class="check-item"><input type="checkbox" data-kcal="30" data-prot="1"><span>100–150g Verdura cotta</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="45" data-prot="0"><span>5g Olio EVO</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="90" data-prot="0"><span>10g Olio EVO</span></label>
+            </div>
         </div>
     </div>
 
     <div class="card" id="sec-cena">
         <div class="card-header">
-            <span class="card-title">20:00 Cena</span>
+            <span class="card-title">Cena</span>
             <span class="card-meta">~480-520 kcal | ~33g prot</span>
         </div>
         <div class="section-subtitle">Proteine — scegli 1 opzione</div>
@@ -714,20 +434,29 @@
             <label class="check-item" id="item-olio-5"><input type="checkbox" data-kcal="45" data-prot="0" id="check-olio-5" name="cena-olio"><span>5g Olio EVO</span></label>
             <label class="check-item" id="item-olio-10"><input type="checkbox" data-kcal="90" data-prot="0" id="check-olio-10" name="cena-olio"><span>10g Olio EVO</span></label>
         </div>
-        <div class="section-subtitle">Oppure: Cena Fuori (sostituisce l'intero pasto)</div>
+        <div class="section-subtitle">Oppure: sostituisce l'intero pasto</div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Cena fuori – in linea con il piano (proteine, verdure, pane)</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="300" data-prot="22" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Barretta proteica (20-25g prot) + banana/frutto se fame</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="400" data-prot="25" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena" data-toast="true"><span>Toast prosciutto e formaggio <span class="badge-max">(max 1×/settimana)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Cena fuori – in linea con il piano</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="650" data-prot="20" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Cena fuori – libero (ristorante)</span></label>
         </div>
     </div>
 
     <div class="card" id="sec-budget">
         <div class="card-header">
-            <span class="card-title">Extra</span>
-            <span class="card-meta">Da usare con moderazione</span>
+            <span class="card-title">Extra / Sociale</span>
+            <span class="card-meta">Con moderazione</span>
         </div>
+        <div class="section-subtitle">Vino (totale settimanale 2 bicchieri)</div>
+        <div class="button-group" data-group="vino">
+            <button type="button" class="btn-option" data-value="0" onclick="selectVino(this)">0</button>
+            <button type="button" class="btn-option" data-value="1" onclick="selectVino(this)">1</button>
+            <button type="button" class="btn-option" data-value="2" onclick="selectVino(this)">2</button>
+        </div>
+        <div id="vino-counter" class="counter-note"></div>
+        <div class="section-subtitle" style="margin-top:14px;">Altri extra</div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="280" data-prot="3"><span>Vino fermo (1 bicchiere) + stuzzichini (olive/patatine/taralli)</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="280" data-prot="4"><span>Brioche</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="250" data-prot="3"><span>Barretta dolce (Bounty/Twix/Mars e simili)</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="200" data-prot="20"><span>Barretta proteica</span></label>
@@ -805,12 +534,8 @@
 </div>
 
 <div class="action-bar">
-    <button class="btn-action btn-cloud" onclick="salvaNelCloud()">
-        ☁️ Salva nel Cloud
-    </button>
-    <button class="btn-action" onclick="generaStampaSintetica()">
-        📄 PDF
-    </button>
+    <button class="btn-action btn-cloud" onclick="salvaNelCloud()">☁️ Salva nel Cloud</button>
+    <button class="btn-action" onclick="generaStampaSintetica()">📄 PDF</button>
 </div>
 
 <div class="print-summary-container" id="print-summary"></div>
@@ -831,16 +556,21 @@
     }
 
     let weightChartInstance = null;
-
     const CYCLE_LENGTH_DEFAULT = 29;
     const STORAGE_KEY = 'last-period-start-date';
+    const DAYTYPE_KEY = 'ultimo-tipo-giornata';
+
+    const DAY_TYPES = {
+        pt: { label: "PT serale", target: "1.450–1.600 kcal", showMinipasto: true },
+        allenamento: { label: "Allenamento", target: "1.350–1.500 kcal", showMinipasto: true },
+        riposo: { label: "Riposo", target: "1.200–1.350 kcal", showMinipasto: false },
+        sociale: { label: "Sociale", target: "1.500–1.750 kcal", showMinipasto: false }
+    };
 
     // ==========================================
     // UTILITY GENERICHE
     // ==========================================
-    function getDataOggi() {
-        return new Date().toISOString().split('T')[0];
-    }
+    function getDataOggi() { return new Date().toISOString().split('T')[0]; }
 
     function mostraAvviso(msg, durata = 3000) {
         const toast = document.getElementById('toast');
@@ -864,9 +594,32 @@
             const [y, m, d] = dataStr.split('-').map(Number);
             const dt = new Date(y, m - 1, d);
             return dt.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
-        } catch (e) {
-            return dataStr;
-        }
+        } catch (e) { return dataStr; }
+    }
+
+    // ==========================================
+    // TIPO DI GIORNATA
+    // ==========================================
+    function renderDaytypeTabs() {
+        const tabsEl = document.getElementById('daytype-tabs');
+        const current = localStorage.getItem(DAYTYPE_KEY) || 'riposo';
+        tabsEl.innerHTML = '';
+        Object.entries(DAY_TYPES).forEach(([key, d]) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'daytype-tab' + (key === current ? ' active' : '');
+            btn.textContent = d.label;
+            btn.onclick = () => { localStorage.setItem(DAYTYPE_KEY, key); renderDaytypeTabs(); applyDaytype(key); };
+            tabsEl.appendChild(btn);
+        });
+        applyDaytype(current);
+    }
+
+    function applyDaytype(key) {
+        const d = DAY_TYPES[key] || DAY_TYPES.riposo;
+        document.getElementById('target-note').textContent = 'Target: ' + d.target;
+        const sec = document.getElementById('sec-minipasto-pt');
+        if (sec) sec.style.display = d.showMinipasto ? 'block' : 'none';
     }
 
     // ==========================================
@@ -875,32 +628,17 @@
     let currentUser = null;
     let appInitialized = false;
 
-    document.addEventListener('DOMContentLoaded', () => {
-        bootstrapAuth();
-    });
+    document.addEventListener('DOMContentLoaded', () => { bootstrapAuth(); renderDaytypeTabs(); });
 
     async function bootstrapAuth() {
-        if (!supabaseClient) {
-            mostraAvviso('Errore: Supabase non inizializzato.');
-            return;
-        }
-
+        if (!supabaseClient) { mostraAvviso('Errore: Supabase non inizializzato.'); return; }
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.user) {
-            currentUser = session.user;
-            onLoginSuccess();
-        } else {
-            mostraOverlayAuth();
-        }
+        if (session && session.user) { currentUser = session.user; onLoginSuccess(); }
+        else { mostraOverlayAuth(); }
 
         supabaseClient.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session && session.user) {
-                currentUser = session.user;
-                onLoginSuccess();
-            } else if (event === 'SIGNED_OUT') {
-                currentUser = null;
-                location.reload();
-            }
+            if (event === 'SIGNED_IN' && session && session.user) { currentUser = session.user; onLoginSuccess(); }
+            else if (event === 'SIGNED_OUT') { currentUser = null; location.reload(); }
         });
     }
 
@@ -910,10 +648,7 @@
         if (label) label.textContent = currentUser.email;
         const userBar = document.getElementById('user-bar');
         if (userBar) userBar.style.display = 'flex';
-        if (!appInitialized) {
-            appInitialized = true;
-            initApp();
-        }
+        if (!appInitialized) { appInitialized = true; initApp(); }
     }
 
     function mostraOverlayAuth() {
@@ -934,60 +669,38 @@
         const email = document.getElementById('auth-email').value.trim();
         const password = document.getElementById('auth-password').value;
         const errEl = document.getElementById('auth-error');
-        errEl.style.color = '#c0392b';
-        errEl.textContent = '';
-        if (!email || !password) {
-            errEl.textContent = 'Inserisci email e password.';
-            return;
-        }
+        errEl.style.color = '#c0392b'; errEl.textContent = '';
+        if (!email || !password) { errEl.textContent = 'Inserisci email e password.'; return; }
         const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) {
-            errEl.textContent = 'Errore: ' + error.message;
-        }
+        if (error) errEl.textContent = 'Errore: ' + error.message;
     }
 
     async function effettuaRegistrazione() {
         const email = document.getElementById('auth-email').value.trim();
         const password = document.getElementById('auth-password').value;
         const errEl = document.getElementById('auth-error');
-        errEl.style.color = '#c0392b';
-        errEl.textContent = '';
-        if (!email || !password) {
-            errEl.textContent = 'Inserisci email e password.';
-            return;
-        }
-        if (password.length < 6) {
-            errEl.textContent = 'La password deve avere almeno 6 caratteri.';
-            return;
-        }
+        errEl.style.color = '#c0392b'; errEl.textContent = '';
+        if (!email || !password) { errEl.textContent = 'Inserisci email e password.'; return; }
+        if (password.length < 6) { errEl.textContent = 'La password deve avere almeno 6 caratteri.'; return; }
         const { data, error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) {
-            errEl.textContent = 'Errore: ' + error.message;
-            return;
-        }
+        if (error) { errEl.textContent = 'Errore: ' + error.message; return; }
         if (data.user && !data.session) {
             errEl.style.color = '#1b8744';
             errEl.textContent = "Registrazione avviata! Controlla la tua email per confermare l'account, poi effettua il login.";
         }
     }
 
-    async function effettuaLogout() {
-        await supabaseClient.auth.signOut();
-    }
+    async function effettuaLogout() { await supabaseClient.auth.signOut(); }
 
     // ==========================================
     // INIZIALIZZAZIONE APP (solo dopo login)
     // ==========================================
     function initApp() {
-        // ---- DIETA E CHECKLIST ----
         const checkboxes = document.querySelectorAll('input[type="checkbox"]');
         const totalKcalEl = document.getElementById('total-kcal');
         const totalProtEl = document.getElementById('total-prot');
 
-        // Assegna un id stabile a ogni checkbox dei pasti, per poterle salvare/ripristinare
-        checkboxes.forEach((cb, idx) => {
-            if (!cb.id) cb.id = 'diet-cb-' + idx;
-        });
+        checkboxes.forEach((cb, idx) => { if (!cb.id) cb.id = 'diet-cb-' + idx; });
 
         const checkNoci = document.getElementById('check-noci');
         const checkOlio5 = document.getElementById('check-olio-5');
@@ -996,9 +709,7 @@
         const itemOlio10 = document.getElementById('item-olio-10');
 
         function updateTotalsAndRules() {
-            let kcal = 0;
-            let prot = 0;
-
+            let kcal = 0, prot = 0;
             const cenaFuoriSelezionata = document.querySelector('input[name="cena-fuori"]:checked');
 
             if (!cenaFuoriSelezionata) {
@@ -1007,23 +718,16 @@
                 const hasNoci = checkNoci.checked;
 
                 if (fatType === 'grassa') {
-                    itemOlio5.classList.add('disabled');
-                    itemOlio10.classList.add('disabled');
-                    checkOlio5.checked = false;
-                    checkOlio10.checked = false;
-                    checkOlio5.disabled = true;
-                    checkOlio10.disabled = true;
+                    itemOlio5.classList.add('disabled'); itemOlio10.classList.add('disabled');
+                    checkOlio5.checked = false; checkOlio10.checked = false;
+                    checkOlio5.disabled = true; checkOlio10.disabled = true;
                 } else if (fatType === 'media' || hasNoci) {
-                    itemOlio5.classList.remove('disabled');
-                    itemOlio10.classList.add('disabled');
+                    itemOlio5.classList.remove('disabled'); itemOlio10.classList.add('disabled');
                     checkOlio10.checked = false;
-                    checkOlio5.disabled = false;
-                    checkOlio10.disabled = true;
+                    checkOlio5.disabled = false; checkOlio10.disabled = true;
                 } else {
-                    itemOlio5.classList.remove('disabled');
-                    itemOlio10.classList.remove('disabled');
-                    checkOlio5.disabled = false;
-                    checkOlio10.disabled = false;
+                    itemOlio5.classList.remove('disabled'); itemOlio10.classList.remove('disabled');
+                    checkOlio5.disabled = false; checkOlio10.disabled = false;
                 }
             }
 
@@ -1053,24 +757,18 @@
 
         updateTotalsAndRules();
         inizializzaSostitutivi();
+        inizializzaPranzoToggle();
 
         // ---- CICLO ORMONALE ----
         const dateInput = document.getElementById('last-period-input');
         const saveBtn = document.getElementById('save-period-btn');
         const saveMsg = document.getElementById('cycle-save-msg');
         let lastPeriodStart = null;
-        const cycleLength = CYCLE_LENGTH_DEFAULT; // fissa a 29 giorni
-        const GRACE_PERIOD_DAYS = 10; // tolleranza per ritardi prima di chiedere di aggiornare la data
+        const cycleLength = CYCLE_LENGTH_DEFAULT;
+        const GRACE_PERIOD_DAYS = 10;
 
-        function parseDateInput(value) {
-            const [y, m, d] = value.split('-').map(Number);
-            return new Date(y, m - 1, d);
-        }
-        function toDateOnly(d) {
-            const copy = new Date(d);
-            copy.setHours(0, 0, 0, 0);
-            return copy;
-        }
+        function parseDateInput(value) { const [y, m, d] = value.split('-').map(Number); return new Date(y, m - 1, d); }
+        function toDateOnly(d) { const copy = new Date(d); copy.setHours(0, 0, 0, 0); return copy; }
 
         function calculateCycle() {
             const badge = document.getElementById('cycle-days-left');
@@ -1091,7 +789,6 @@
                 const cycleDay = daysSinceStart + 1;
                 const daysLeft = cycleLength - daysSinceStart;
                 badge.textContent = `-${daysLeft} gg al ciclo`;
-
                 if (cycleDay >= 1 && cycleDay <= 5) {
                     document.getElementById('phase-m').classList.add('active');
                     advice.textContent = "Fase Mestruale: Possibile calo di energia. Privilegiare cibi caldi, digeribili e ricchi di ferro.";
@@ -1125,10 +822,7 @@
 
         saveBtn.addEventListener('click', () => {
             const val = dateInput.value;
-            if (!val) {
-                saveMsg.textContent = "Seleziona una data valida.";
-                return;
-            }
+            if (!val) { saveMsg.textContent = "Seleziona una data valida."; return; }
             localStorage.setItem(STORAGE_KEY, val);
             lastPeriodStart = parseDateInput(val);
             calculateCycle();
@@ -1138,15 +832,9 @@
 
         // ---- PESO PICKER ----
         const pickerList = document.getElementById('weight-picker');
-        const minWeight = 40.0;
-        const maxWeight = 100.0;
-        const step = 0.1;
+        const minWeight = 40.0, maxWeight = 100.0, step = 0.1;
         let items = [];
-
-        for (let w = minWeight; w <= maxWeight + 0.001; w += step) {
-            items.push(parseFloat(w.toFixed(1)));
-        }
-
+        for (let w = minWeight; w <= maxWeight + 0.001; w += step) items.push(parseFloat(w.toFixed(1)));
         items.forEach(w => {
             const div = document.createElement('div');
             div.className = 'picker-item';
@@ -1154,12 +842,9 @@
             div.textContent = w.toFixed(1) + ' kg';
             pickerList.appendChild(div);
         });
-
         const defaultWeight = 60.0;
         const defaultIndex = items.indexOf(defaultWeight);
-        if (defaultIndex !== -1) {
-            pickerList.scrollTop = defaultIndex * 40;
-        }
+        if (defaultIndex !== -1) pickerList.scrollTop = defaultIndex * 40;
 
         const salvaBozzaDebounced = debounce(() => salvaBozza(), 400);
         window._salvaBozzaDebounced = salvaBozzaDebounced;
@@ -1167,64 +852,55 @@
         window.handlePickerScroll = function () {
             const index = Math.round(pickerList.scrollTop / 40);
             const allItems = pickerList.querySelectorAll('.picker-item');
-            allItems.forEach((el, idx) => {
-                if (idx === index) {
-                    el.classList.add('selected');
-                } else {
-                    el.classList.remove('selected');
-                }
-            });
+            allItems.forEach((el, idx) => { el.classList.toggle('selected', idx === index); });
             salvaBozzaDebounced();
         };
         handlePickerScroll();
 
-        // ---- NOTE: autosalvataggio bozza mentre si scrive ----
         const notesEl = document.getElementById('diary-notes');
         notesEl.addEventListener('input', salvaBozzaDebounced);
 
-        // ---- GRAFICO PESO (Chart.js) ----
+        // ---- GRAFICO PESO ----
         const ctx = document.getElementById('weightChart').getContext('2d');
         weightChartInstance = new Chart(ctx, {
             type: 'line',
-            data: {
-                labels: [],
-                datasets: [{
-                    label: 'Peso (kg)',
-                    data: [],
-                    borderColor: '#27ae60',
-                    backgroundColor: 'rgba(39, 174, 96, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { color: '#f1f3f5' } },
-                    x: { grid: { display: false } }
-                }
-            }
+            data: { labels: [], datasets: [{ label: 'Peso (kg)', data: [], borderColor: '#27ae60', backgroundColor: 'rgba(39, 174, 96, 0.1)', borderWidth: 2, fill: true, tension: 0.2 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#f1f3f5' } }, x: { grid: { display: false } } } }
         });
 
-        // ---- CARICAMENTO DATI ALL'AVVIO (bozza locale, cloud, storico peso) ----
         caricaStoricoPeso();
         caricaStatoIniziale();
+        caricaContatoriSettimana();
+    }
+
+    // ---- TOGGLE PRANZO ----
+    function inizializzaPranzoToggle() {
+        const header = document.getElementById('pranzo-header');
+        const body = document.getElementById('pranzo-body');
+        const chevron = document.getElementById('pranzo-chevron');
+        header.addEventListener('click', () => {
+            const isOpen = body.style.display !== 'none';
+            body.style.display = isOpen ? 'none' : 'block';
+            chevron.textContent = isOpen ? '▸' : '▾';
+            header.classList.toggle('open', !isOpen);
+        });
+    }
+
+    // ---- VINO ----
+    function selectVino(btn) {
+        const group = btn.parentElement;
+        group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        salvaBozza();
     }
 
     // ==========================================
-    // BOZZA LOCALE (localStorage) — evita di perdere le selezioni
-    // fatte durante la giornata anche se non si preme "Salva nel Cloud"
+    // BOZZA LOCALE
     // ==========================================
     function raccogliStatoCorrente() {
         const dietCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'))
             .filter(cb => cb.checked)
-            .map(cb => {
-                const span = cb.parentElement.querySelector('span');
-                return span ? span.textContent.trim() : cb.id;
-            });
+            .map(cb => { const span = cb.parentElement.querySelector('span'); return span ? span.textContent.trim() : cb.id; });
 
         const evac = document.querySelector('[data-group="evacuazione"] .active');
         const bristol = document.querySelector('[data-group="bristol"] .active');
@@ -1232,11 +908,17 @@
         const allenamento = document.querySelector('[data-group="allenamento"] .active');
         const sonno = document.querySelector('[data-group="sonno"] .active');
         const acqua = document.querySelector('[data-group="acqua"] .active');
+        const vinoBtn = document.querySelector('[data-group="vino"] .active');
         const pesoEl = document.querySelector('#weight-picker .picker-item.selected');
         const notesEl = document.getElementById('diary-notes');
 
+        const vinoBicchieri = vinoBtn ? parseInt(vinoBtn.dataset.value, 10) : 0;
+        const nociSelezionate = document.getElementById('check-noci') ? document.getElementById('check-noci').checked : false;
+        const toastSelezionato = document.querySelectorAll('input[data-toast="true"]:checked').length > 0;
+
         return {
             data: getDataOggi(),
+            tipo_giornata: localStorage.getItem(DAYTYPE_KEY) || 'riposo',
             kcal: parseInt(document.getElementById('total-kcal').textContent, 10) || 0,
             proteine: document.getElementById('total-prot').textContent,
             pasti_selezionati: dietCbs,
@@ -1247,7 +929,10 @@
             sonno: sonno ? sonno.textContent.trim() : null,
             acqua: acqua ? acqua.textContent.trim() : null,
             peso: pesoEl ? parseFloat(pesoEl.dataset.value) : null,
-            note: notesEl ? notesEl.value : ''
+            note: notesEl ? notesEl.value : '',
+            vino_bicchieri: vinoBicchieri,
+            noci_25g: nociSelezionate,
+            toast_prosciutto_formaggio: toastSelezionato
         };
     }
 
@@ -1255,9 +940,7 @@
         try {
             const stato = raccogliStatoCorrente();
             localStorage.setItem('bozza-' + stato.data, JSON.stringify(stato));
-        } catch (e) {
-            console.error('Errore salvataggio bozza locale:', e);
-        }
+        } catch (e) { console.error('Errore salvataggio bozza locale:', e); }
     }
     window.salvaBozza = salvaBozza;
 
@@ -1270,14 +953,8 @@
                 const altre = card.querySelectorAll('input[type="checkbox"]:not(.meal-replace-checkbox)');
                 altre.forEach(o => {
                     const item = o.closest('.check-item');
-                    if (cb.checked) {
-                        o.checked = false;
-                        o.disabled = true;
-                        if (item) item.classList.add('disabled');
-                    } else {
-                        o.disabled = false;
-                        if (item) item.classList.remove('disabled');
-                    }
+                    if (cb.checked) { o.checked = false; o.disabled = true; if (item) item.classList.add('disabled'); }
+                    else { o.disabled = false; if (item) item.classList.remove('disabled'); }
                 });
                 if (window.updateTotalsAndRules) window.updateTotalsAndRules();
                 salvaBozza();
@@ -1289,8 +966,7 @@
         if (!valore) return;
         const group = document.querySelector(`[data-group="${groupName}"]`);
         if (!group) return;
-        const btn = Array.from(group.querySelectorAll('.btn-option'))
-            .find(b => b.textContent.trim() === String(valore).trim());
+        const btn = Array.from(group.querySelectorAll('.btn-option')).find(b => b.textContent.trim() === String(valore).trim());
         if (btn) btn.click();
     }
 
@@ -1299,35 +975,30 @@
         if (!pickerList) return;
         const allItems = pickerList.querySelectorAll('.picker-item');
         let target = null;
-        allItems.forEach(el => {
-            if (Math.abs(parseFloat(el.dataset.value) - valore) < 0.05) target = el;
-        });
-        if (target) {
-            pickerList.scrollTop = target.offsetTop - 40;
-            handlePickerScroll();
-        }
+        allItems.forEach(el => { if (Math.abs(parseFloat(el.dataset.value) - valore) < 0.05) target = el; });
+        if (target) { pickerList.scrollTop = target.offsetTop - 40; handlePickerScroll(); }
     }
 
     function applicaStato(stato) {
         if (!stato) return;
 
+        if (stato.tipo_giornata) {
+            localStorage.setItem(DAYTYPE_KEY, stato.tipo_giornata);
+            renderDaytypeTabs();
+        }
+
         if (Array.isArray(stato.pasti_selezionati)) {
             stato.pasti_selezionati.forEach(valore => {
-                // Compatibilità con vecchie bozze salvate come id posizionale (es. "diet-cb-3")
                 let match = document.getElementById(valore);
                 if (!match) {
                     match = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-                        .find(cb => {
-                            const span = cb.parentElement.querySelector('span');
-                            return span && span.textContent.trim() === String(valore).trim();
-                        });
+                        .find(cb => { const span = cb.parentElement.querySelector('span'); return span && span.textContent.trim() === String(valore).trim(); });
                 }
                 if (match) match.checked = true;
             });
             if (window.updateTotalsAndRules) window.updateTotalsAndRules();
         }
 
-        // L'evacuazione va cliccata prima, altrimenti la sezione Bristol resta nascosta
         clickMatchingButton('evacuazione', stato.evacuazione);
         setTimeout(() => clickMatchingButton('bristol', stato.bristol), 0);
         clickMatchingButton('gonfiore', stato.gonfiore);
@@ -1335,100 +1006,73 @@
         clickMatchingButton('sonno', stato.sonno);
         clickMatchingButton('acqua', stato.acqua);
 
-        if (stato.peso != null && !isNaN(stato.peso)) {
-            selezionaPesoPicker(parseFloat(stato.peso));
+        if (stato.vino_bicchieri !== undefined && stato.vino_bicchieri !== null) {
+            const vinoBtn = document.querySelector(`[data-group="vino"] .btn-option[data-value="${stato.vino_bicchieri}"]`);
+            if (vinoBtn) vinoBtn.click();
         }
 
+        if (stato.peso != null && !isNaN(stato.peso)) selezionaPesoPicker(parseFloat(stato.peso));
+
         const notesEl = document.getElementById('diary-notes');
-        if (notesEl && stato.note) {
-            notesEl.value = stato.note;
-        }
+        if (notesEl && stato.note) notesEl.value = stato.note;
     }
 
     async function caricaDatiOggiDalCloud(dataOggi) {
         if (!supabaseClient || !currentUser) return null;
         try {
             const { data, error } = await supabaseClient
-                .from('diario')
-                .select('*')
-                .eq('data', dataOggi)
-                .eq('user_id', currentUser.id)
-                .order('id', { ascending: false })
-                .limit(1);
-            if (error) {
-                console.error('Errore lettura dati odierni dal cloud:', error);
-                return null;
-            }
+                .from('diario').select('*').eq('data', dataOggi).eq('user_id', currentUser.id)
+                .order('id', { ascending: false }).limit(1);
+            if (error) { console.error('Errore lettura dati odierni dal cloud:', error); return null; }
             return (data && data.length) ? data[0] : null;
-        } catch (e) {
-            console.error('Errore lettura dati odierni dal cloud:', e);
-            return null;
-        }
+        } catch (e) { console.error('Errore lettura dati odierni dal cloud:', e); return null; }
     }
 
     async function caricaStatoIniziale() {
         const dataOggi = getDataOggi();
         const bozzaLocale = localStorage.getItem('bozza-' + dataOggi);
-
         if (bozzaLocale) {
-            try {
-                applicaStato(JSON.parse(bozzaLocale));
-                mostraAvviso('Bozza di oggi ripristinata.');
-                return;
-            } catch (e) {
-                console.error('Bozza locale corrotta, provo dal cloud:', e);
-            }
+            try { applicaStato(JSON.parse(bozzaLocale)); mostraAvviso('Bozza di oggi ripristinata.'); return; }
+            catch (e) { console.error('Bozza locale corrotta, provo dal cloud:', e); }
         }
-
         const datiCloud = await caricaDatiOggiDalCloud(dataOggi);
-        if (datiCloud) {
-            applicaStato(datiCloud);
-            mostraAvviso('Dati di oggi già salvati nel Cloud: ripristinati.');
-        }
+        if (datiCloud) { applicaStato(datiCloud); mostraAvviso('Dati di oggi già salvati nel Cloud: ripristinati.'); }
     }
 
     async function caricaStoricoPeso() {
         const emptyNote = document.getElementById('chart-empty-note');
-        if (!supabaseClient) {
-            if (emptyNote) emptyNote.style.display = 'block';
-            return;
-        }
-        if (!currentUser) {
-            if (emptyNote) emptyNote.style.display = 'block';
-            return;
-        }
+        if (!supabaseClient || !currentUser) { if (emptyNote) emptyNote.style.display = 'block'; return; }
         try {
             const { data, error } = await supabaseClient
-                .from('diario')
-                .select('data, peso')
-                .eq('user_id', currentUser.id)
-                .not('peso', 'is', null)
-                .order('data', { ascending: true })
-                .limit(30);
-
-            if (error) {
-                console.error('Errore caricamento storico peso:', error);
-                if (emptyNote) emptyNote.style.display = 'block';
-                return;
-            }
-
-            if (!data || data.length === 0) {
-                if (emptyNote) emptyNote.style.display = 'block';
-                return;
-            }
-
+                .from('diario').select('data, peso').eq('user_id', currentUser.id)
+                .not('peso', 'is', null).order('data', { ascending: true }).limit(30);
+            if (error) { console.error('Errore caricamento storico peso:', error); if (emptyNote) emptyNote.style.display = 'block'; return; }
+            if (!data || data.length === 0) { if (emptyNote) emptyNote.style.display = 'block'; return; }
             if (emptyNote) emptyNote.style.display = 'none';
-
-            const labels = data.map(r => formatDataBreve(r.data));
-            const valori = data.map(r => r.peso);
-
-            weightChartInstance.data.labels = labels;
-            weightChartInstance.data.datasets[0].data = valori;
+            weightChartInstance.data.labels = data.map(r => formatDataBreve(r.data));
+            weightChartInstance.data.datasets[0].data = data.map(r => r.peso);
             weightChartInstance.update();
-        } catch (e) {
-            console.error('Errore caricamento storico peso:', e);
-            if (emptyNote) emptyNote.style.display = 'block';
-        }
+        } catch (e) { console.error('Errore caricamento storico peso:', e); if (emptyNote) emptyNote.style.display = 'block'; }
+    }
+
+    // ---- CONTATORI SETTIMANALI (vino / noci) ----
+    async function caricaContatoriSettimana() {
+        const vinoEl = document.getElementById('vino-counter');
+        const nociEl = document.getElementById('noci-counter');
+        if (!supabaseClient || !currentUser) return;
+        try {
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+            const dataLimite = sevenDaysAgo.toISOString().split('T')[0];
+            const { data, error } = await supabaseClient
+                .from('diario').select('vino_bicchieri, noci_25g')
+                .eq('user_id', currentUser.id).gte('data', dataLimite);
+            if (error) { console.error('Errore caricamento contatori settimana:', error); return; }
+            const vinoTot = (data || []).reduce((s, r) => s + (r.vino_bicchieri || 0), 0);
+            const nociTot = (data || []).filter(r => r.noci_25g).length;
+            if (vinoEl) vinoEl.textContent = `${vinoTot}/2 bicchieri questa settimana`;
+            if (nociEl) nociEl.textContent = `${nociTot}/2-3 questa settimana`;
+        } catch (e) { console.error('Errore caricamento contatori settimana:', e); }
     }
 
     // ---- FUNZIONI SELEZIONE SINTOMI ----
@@ -1436,11 +1080,9 @@
         const group = btn.parentElement;
         group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-
         const bristolSec = document.getElementById('bristol-section');
-        if (val === 'Sì') {
-            bristolSec.style.display = 'block';
-        } else {
+        if (val === 'Sì') { bristolSec.style.display = 'block'; }
+        else {
             bristolSec.style.display = 'none';
             document.querySelectorAll('[data-group="bristol"] .btn-option').forEach(b => b.classList.remove('active'));
             document.getElementById('bristol-desc').style.display = 'none';
@@ -1452,7 +1094,6 @@
         const group = btn.parentElement;
         group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-
         const descEl = document.getElementById('bristol-desc');
         descEl.textContent = val + ': ' + desc;
         descEl.style.display = 'block';
@@ -1463,7 +1104,6 @@
         const group = btn.parentElement;
         group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-
         const descEl = document.getElementById('gonfiore-desc');
         descEl.textContent = 'Gonfiore ' + val + ': ' + desc;
         descEl.style.display = 'block';
@@ -1477,21 +1117,12 @@
         salvaBozza();
     }
 
-    // ---- FUNZIONE SALVATAGGIO CLOUD AGGIORNATA ----
+    // ---- SALVATAGGIO CLOUD ----
     async function salvaNelCloud() {
-        if (!supabaseClient) {
-            alert("Errore: Connessione a Supabase non inizializzata.");
-            return;
-        }
-
-        if (!currentUser) {
-            alert("Devi effettuare l'accesso per salvare i dati.");
-            return;
-        }
+        if (!supabaseClient) { alert("Errore: Connessione a Supabase non inizializzata."); return; }
+        if (!currentUser) { alert("Devi effettuare l'accesso per salvare i dati."); return; }
 
         const stato = raccogliStatoCorrente();
-
-        // Oggetto dati da inviare a Supabase
         const datiDaSalvare = {
             user_id: currentUser.id,
             data: stato.data,
@@ -1505,12 +1136,13 @@
             sonno: stato.sonno,
             acqua: stato.acqua,
             peso: stato.peso,
-            note: stato.note
+            note: stato.note,
+            vino_bicchieri: stato.vino_bicchieri,
+            noci_25g: stato.noci_25g,
+            toast_prosciutto_formaggio: stato.toast_prosciutto_formaggio
         };
 
-        const { data, error } = await supabaseClient
-            .from('diario')
-            .upsert([datiDaSalvare], { onConflict: 'user_id,data' });
+        const { data, error } = await supabaseClient.from('diario').upsert([datiDaSalvare], { onConflict: 'user_id,data' });
 
         if (error) {
             console.error("Errore durante il salvataggio:", error);
@@ -1519,43 +1151,34 @@
             alert("☁️ Dati salvati con successo nel Cloud!");
             salvaBozza();
             caricaStoricoPeso();
+            caricaContatoriSettimana();
         }
     }
 
-    // ---- FUNZIONE STAMPA PDF ----
+    // ---- STAMPA PDF ----
     function elencoPastiSelezionati() {
         const sezioni = [
             { id: 'sec-colazione', titolo: 'Colazione' },
-            { id: 'sec-mattina', titolo: 'Metà Mattina' },
+            { id: 'sec-minipasto-pt', titolo: 'Mini-pasto pre-PT' },
             { id: 'sec-pranzo', titolo: 'Pranzo' },
-            { id: 'sec-merenda', titolo: 'Merenda' },
             { id: 'sec-cena', titolo: 'Cena' },
             { id: 'sec-budget', titolo: 'Extra' }
         ];
-
         let html = '';
         sezioni.forEach(sez => {
             const card = document.getElementById(sez.id);
             if (!card) return;
             const selezionati = Array.from(card.querySelectorAll('input[type="checkbox"]:checked'))
-                .map(cb => {
-                    const span = cb.parentElement.querySelector('span');
-                    return span ? span.textContent.trim() : '';
-                })
+                .map(cb => { const span = cb.parentElement.querySelector('span'); return span ? span.textContent.trim() : ''; })
                 .filter(Boolean);
-
-            if (selezionati.length > 0) {
-                html += `<li><strong>${sez.titolo}:</strong> ${selezionati.join(' + ')}</li>`;
-            }
+            if (selezionati.length > 0) html += `<li><strong>${sez.titolo}:</strong> ${selezionati.join(' + ')}</li>`;
         });
-
         return html || '<li><em>Nessun pasto selezionato.</em></li>';
     }
 
     function generaStampaSintetica() {
         const container = document.getElementById('print-summary');
         const oggi = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
-
         const kcal = document.getElementById('total-kcal').textContent;
         const prot = document.getElementById('total-prot').textContent;
         const note = document.getElementById('diary-notes').value || 'Nessuna nota inserita.';
@@ -1567,8 +1190,8 @@
         const sonno = document.querySelector('[data-group="sonno"] .active');
         const acqua = document.querySelector('[data-group="acqua"] .active');
         const peso = document.querySelector('#weight-picker .picker-item.selected');
+        const vinoBtn = document.querySelector('[data-group="vino"] .active');
 
-        // Fase del ciclo (se una data è stata impostata)
         const cicloBadge = document.getElementById('cycle-days-left');
         const faseAttivaBox = document.querySelector('.phase-box.active');
         let testoFaseCiclo = '';
@@ -1577,21 +1200,19 @@
             testoFaseCiclo = `${nomeFase} (${cicloBadge.textContent.trim()})`;
         }
 
+        const tipoGiornata = DAY_TYPES[localStorage.getItem(DAYTYPE_KEY) || 'riposo'].label;
+
         let html = `
             <h1>Resoconto Giornaliero - Piano Nutrizionale</h1>
-            <div class="pdate">Data: ${oggi}</div>
-            
+            <div class="pdate">Data: ${oggi} — Giornata: ${tipoGiornata}</div>
             <div class="summary-box">
                 <strong>Totale kcal:</strong> ${kcal} kcal &nbsp;|&nbsp; <strong>Proteine:</strong> ${prot}
                 ${peso ? `<br><strong>Peso registrato:</strong> ${peso.textContent}` : ''}
+                ${vinoBtn ? `<br><strong>Vino:</strong> ${vinoBtn.textContent} bicchieri` : ''}
                 ${testoFaseCiclo ? `<br><strong>Fase del ciclo:</strong> ${testoFaseCiclo}` : ''}
             </div>
-
             <h2>Pasti della Giornata</h2>
-            <ul>
-                ${elencoPastiSelezionati()}
-            </ul>
-
+            <ul>${elencoPastiSelezionati()}</ul>
             <h2>Diario Sintomi & Abitudini</h2>
             <ul>
                 <li><strong>Evacuazione:</strong> ${evac ? evac.textContent : 'Non specificato'} ${bristol ? `(${bristol.textContent})` : ''}</li>
@@ -1600,11 +1221,9 @@
                 <li><strong>Sonno:</strong> ${sonno ? sonno.textContent : 'Non specificato'}</li>
                 <li><strong>Acqua:</strong> ${acqua ? acqua.textContent : 'Non specificato'}</li>
             </ul>
-
             <h2>Note della Giornata</h2>
             <div class="notes-box">${note}</div>
         `;
-
         container.innerHTML = html;
         window.print();
     }
