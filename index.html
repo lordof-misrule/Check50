@@ -70,33 +70,6 @@
             text-align: center;
         }
 
-        /* Selettore tipo giornata */
-        .daytype-tabs {
-            display: flex;
-            gap: 6px;
-            overflow-x: auto;
-            margin-bottom: 14px;
-            padding-bottom: 2px;
-        }
-        .daytype-tab {
-            flex: 0 0 auto;
-            padding: 9px 14px;
-            border-radius: 100px;
-            border: 1px solid var(--border);
-            background: var(--card-bg);
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            font-family: inherit;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        .daytype-tab.active {
-            background: var(--primary);
-            border-color: var(--primary);
-            color: #fff;
-        }
-
         /* Fixed Top Summary Bar */
         .summary-bar {
             position: sticky;
@@ -300,8 +273,6 @@
             <button type="button" onclick="effettuaLogout()">Esci</button>
         </div>
     </header>
-
-    <div class="daytype-tabs" id="daytype-tabs"></div>
 
     <div class="summary-bar">
         <div class="summary-item">
@@ -551,14 +522,6 @@
     let weightChartInstance = null;
     const CYCLE_LENGTH_DEFAULT = 29;
     const STORAGE_KEY = 'last-period-start-date';
-    const DAYTYPE_KEY = 'ultimo-tipo-giornata';
-
-    const DAY_TYPES = {
-        pt: { label: "PT serale", target: "1.450–1.600 kcal", showMinipasto: true },
-        allenamento: { label: "Allenamento", target: "1.350–1.500 kcal", showMinipasto: true },
-        riposo: { label: "Riposo", target: "1.200–1.350 kcal", showMinipasto: false },
-        sociale: { label: "Sociale", target: "1.500–1.750 kcal", showMinipasto: false }
-    };
 
     // ==========================================
     // UTILITY GENERICHE
@@ -591,35 +554,12 @@
     }
 
     // ==========================================
-    // TIPO DI GIORNATA
-    // ==========================================
-    function renderDaytypeTabs() {
-        const tabsEl = document.getElementById('daytype-tabs');
-        const current = localStorage.getItem(DAYTYPE_KEY) || 'riposo';
-        tabsEl.innerHTML = '';
-        Object.entries(DAY_TYPES).forEach(([key, d]) => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'daytype-tab' + (key === current ? ' active' : '');
-            btn.textContent = d.label;
-            btn.onclick = () => { localStorage.setItem(DAYTYPE_KEY, key); renderDaytypeTabs(); applyDaytype(key); };
-            tabsEl.appendChild(btn);
-        });
-        applyDaytype(current);
-    }
-
-    function applyDaytype(key) {
-        // Lo spuntino ora è sempre visibile: il tipo di giornata resta salvato
-        // solo per il resoconto stampato, senza nascondere sezioni.
-    }
-
-    // ==========================================
     // AUTENTICAZIONE
     // ==========================================
     let currentUser = null;
     let appInitialized = false;
 
-    document.addEventListener('DOMContentLoaded', () => { bootstrapAuth(); renderDaytypeTabs(); });
+    document.addEventListener('DOMContentLoaded', () => { bootstrapAuth(); });
 
     async function bootstrapAuth() {
         if (!supabaseClient) { mostraAvviso('Errore: Supabase non inizializzato.'); return; }
@@ -823,7 +763,7 @@
 
         // ---- PESO PICKER ----
         const pickerList = document.getElementById('weight-picker');
-        const minWeight = 40.0, maxWeight = 100.0, step = 0.1;
+        const minWeight = 45.0, maxWeight = 55.0, step = 0.1;
         let items = [];
         for (let w = minWeight; w <= maxWeight + 0.001; w += step) items.push(parseFloat(w.toFixed(1)));
         items.forEach(w => {
@@ -833,7 +773,7 @@
             div.textContent = w.toFixed(1) + ' kg';
             pickerList.appendChild(div);
         });
-        const defaultWeight = 60.0;
+        const defaultWeight = 50.0;
         const defaultIndex = items.indexOf(defaultWeight);
         if (defaultIndex !== -1) pickerList.scrollTop = defaultIndex * 40;
 
@@ -909,7 +849,6 @@
 
         return {
             data: getDataOggi(),
-            tipo_giornata: localStorage.getItem(DAYTYPE_KEY) || 'riposo',
             kcal: parseInt(document.getElementById('total-kcal').textContent, 10) || 0,
             proteine: document.getElementById('total-prot').textContent,
             pasti_selezionati: dietCbs,
@@ -972,11 +911,6 @@
 
     function applicaStato(stato) {
         if (!stato) return;
-
-        if (stato.tipo_giornata) {
-            localStorage.setItem(DAYTYPE_KEY, stato.tipo_giornata);
-            renderDaytypeTabs();
-        }
 
         if (Array.isArray(stato.pasti_selezionati)) {
             stato.pasti_selezionati.forEach(valore => {
@@ -1191,11 +1125,9 @@
             testoFaseCiclo = `${nomeFase} (${cicloBadge.textContent.trim()})`;
         }
 
-        const tipoGiornata = DAY_TYPES[localStorage.getItem(DAYTYPE_KEY) || 'riposo'].label;
-
         let html = `
             <h1>Resoconto Giornaliero - Piano Nutrizionale</h1>
-            <div class="pdate">Data: ${oggi} — Giornata: ${tipoGiornata}</div>
+            <div class="pdate">Data: ${oggi}</div>
             <div class="summary-box">
                 <strong>Totale kcal:</strong> ${kcal} kcal &nbsp;|&nbsp; <strong>Proteine:</strong> ${prot}
                 ${peso ? `<br><strong>Peso registrato:</strong> ${peso.textContent}` : ''}
