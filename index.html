@@ -88,6 +88,9 @@
 
         .summary-item { text-align: center; flex: 1; }
         .summary-value { font-size: 1.05rem; font-weight: 700; color: #2ecc71; }
+        .summary-value.val-yellow { color: #f1c40f; }
+        .summary-value.val-green { color: #2ecc71; }
+        .summary-value.val-red { color: #e74c3c; }
         .summary-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.9; }
         .target-note { text-align: center; font-size: 0.75rem; color: var(--text-muted); margin: -12px 0 16px 0; }
 
@@ -732,6 +735,17 @@
             totalProtEl.textContent = prot + ' g';
             totalCarbEl.textContent = carb + ' g';
             totalFatEl.textContent = fat + ' g';
+
+            applyTargetColor(totalProtEl, prot, 80, 85);
+            applyTargetColor(totalCarbEl, carb, 160, 165);
+            applyTargetColor(totalFatEl, fat, 40, 50);
+        }
+
+        function applyTargetColor(el, value, min, max) {
+            el.classList.remove('val-yellow', 'val-green', 'val-red');
+            if (value < min) el.classList.add('val-yellow');
+            else if (value > max) el.classList.add('val-red');
+            else el.classList.add('val-green');
         }
         window.updateTotalsAndRules = updateTotalsAndRules;
 
