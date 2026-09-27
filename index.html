@@ -86,9 +86,10 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .summary-item { text-align: center; }
-        .summary-value { font-size: 1.3rem; font-weight: 700; color: #2ecc71; }
-        .summary-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; }
+        .summary-item { text-align: center; flex: 1; }
+        .summary-value { font-size: 1.05rem; font-weight: 700; color: #2ecc71; }
+        .summary-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.9; }
+        .target-note { text-align: center; font-size: 0.75rem; color: var(--text-muted); margin: -12px 0 16px 0; }
 
         .card {
             background: var(--card-bg);
@@ -277,13 +278,22 @@
     <div class="summary-bar">
         <div class="summary-item">
             <div class="summary-value" id="total-kcal">0</div>
-            <div class="summary-label">Kcal Selezionate</div>
+            <div class="summary-label">Kcal</div>
         </div>
         <div class="summary-item">
             <div class="summary-value" id="total-prot">0 g</div>
-            <div class="summary-label">Proteine Totali</div>
+            <div class="summary-label">Proteine</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-value" id="total-carb">0 g</div>
+            <div class="summary-label">Carboidrati</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-value" id="total-fat">0 g</div>
+            <div class="summary-label">Grassi</div>
         </div>
     </div>
+    <div class="target-note">Target giorno: proteine 80-85g · carboidrati 160-165g · grassi ~45g</div>
 
     <div class="card">
         <div class="card-header">
@@ -318,14 +328,18 @@
     <div class="card" id="sec-colazione">
         <div class="card-header">
             <span class="card-title">Colazione</span>
-            <span class="card-meta">~300-350 kcal | ~5-24g prot</span>
+            <span class="card-meta">~280-350 kcal</span>
         </div>
-        <div class="section-subtitle">Scegli 1 opzione</div>
+        <div class="section-subtitle">A casa — scegli 1 opzione</div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="340" data-prot="20" name="colazione"><span>Pane 50-60g + 2 Uova + Kiwi / Mirtilli / Banana</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" name="colazione"><span>French Toast: Pane 60g + 1 Uovo + Albume 120-150g + Marmellata 20g</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="18" name="colazione"><span>Pane 60-80g + Ricotta di capra 100g + Marmellata 15-20g <span class="badge-max">(max 1×/settimana)</span></span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="320" data-prot="5" name="colazione"><span>Cappuccino/caffè + brioche <span class="badge-max">(max 1×/settimana)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="340" data-prot="20" data-carb="35" data-fatg="12" name="colazione"><span>Pane 50-60g + 2 Uova + Kiwi / Mirtilli / Banana</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" data-carb="30" data-fatg="10" name="colazione"><span>French Toast: Pane 60g + 1 Uovo + Albume 120-150g + Marmellata 20g</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="300" data-prot="20" data-carb="40" data-fatg="6" name="colazione"><span>Pane 60g + Marmellata 20g + 1 Uovo + Albume 150g</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="18" data-carb="45" data-fatg="10" data-formaggio="true" name="colazione"><span>Pane 60-80g + Ricotta di capra 100g + Marmellata 15-20g <span class="badge-max">(max 1×/settimana)</span></span></label>
+        </div>
+        <div class="section-subtitle">Fuori (sostituisce quella di casa)</div>
+        <div class="checkbox-group">
+            <label class="check-item"><input type="checkbox" data-kcal="300" data-prot="4" data-carb="38" data-fatg="12" name="colazione"><span>Colazione fuori (caffè/cappuccino + brioche o dolce)</span></label>
         </div>
     </div>
 
@@ -335,9 +349,9 @@
             <span class="card-meta">Pre-PT o quando serve</span>
         </div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="100" data-prot="1" name="minipasto-carb"><span>Banana <span class="badge-max">(pre-PT)</span></span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="116" data-prot="3" name="minipasto-carb"><span>Crackers, un pacchetto <span class="badge-max">(pre-PT)</span></span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="180" data-prot="4" id="check-noci"><span>Noci 25g + frutta <span class="badge-max">(2-3×/settimana)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="100" data-prot="1" data-carb="25" data-fatg="0" name="minipasto-carb"><span>Banana <span class="badge-max">(pre-PT)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="116" data-prot="3" data-carb="20" data-fatg="3" name="minipasto-carb"><span>Crackers, un pacchetto <span class="badge-max">(pre-PT)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="180" data-prot="4" data-carb="15" data-fatg="12" id="check-noci"><span>Noci 25g + frutta <span class="badge-max">(2-3×/settimana)</span></span></label>
         </div>
         <div id="noci-counter" class="counter-note"></div>
     </div>
@@ -348,23 +362,31 @@
             <span class="card-meta">Facoltativo</span>
         </div>
         <div id="pranzo-body" style="display:none;">
-            <div class="section-subtitle">Scegli 1 opzione</div>
+            <div class="section-subtitle">Al lavoro — scegli 1 opzione</div>
             <div class="checkbox-group">
-                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Panino 80g con 100-120g Tonno al naturale</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Panino 80g con 100-120g Pollo / Tacchino</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="410" data-prot="32" name="pranzo-main"><span>Panino 80g con 2 Uova + 150g Albume</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Pasta/Riso/Grano Saraceno 60-70g + Tonno 100-120g</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" name="pranzo-main"><span>Pasta/Riso/Grano Saraceno 60-70g + Pollo / Tacchino 100-120g</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="410" data-prot="32" name="pranzo-main"><span>Pasta/Riso/Grano Saraceno 60-70g + 2 Uova + 150g Albume</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="400" data-prot="25" name="pranzo-main" data-toast="true"><span>Toast prosciutto e formaggio <span class="badge-max">(max 1×/settimana)</span></span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" name="pranzo-main"><span>Pranzo fuori – in linea con il piano</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="650" data-prot="20" name="pranzo-main"><span>Pranzo fuori – libero (ristorante)</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" data-carb="45" data-fatg="6" name="pranzo-main"><span>Panino 70-80g con Tonno al naturale 90-100g</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="26" data-carb="45" data-fatg="8" name="pranzo-main"><span>Panino 70-80g con Fesa/Bresaola/Arrosto 70-80g <span class="badge-max">(max 1-2×/settimana)</span></span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="400" data-prot="30" data-carb="42" data-fatg="14" name="pranzo-main"><span>Panino 70-80g con Frittata di 2 Uova</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="250" data-prot="20" data-carb="25" data-fatg="6" name="pranzo-main"><span>Emergenza: Barretta (18-20g prot) + Banana o Crackers</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="400" data-prot="25" data-carb="35" data-fatg="18" data-formaggio="true" name="pranzo-main" data-toast="true"><span>Toast prosciutto e formaggio <span class="badge-max">(max 1×/settimana)</span></span></label>
             </div>
-            <div class="section-subtitle">Contorno e Condimento Pranzo</div>
+            <div class="section-subtitle">A casa — scegli 1 opzione</div>
             <div class="checkbox-group">
-                <label class="check-item"><input type="checkbox" data-kcal="30" data-prot="1"><span>100–150g Verdura cotta</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="45" data-prot="0"><span>5g Olio EVO</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="90" data-prot="0"><span>10g Olio EVO</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" data-carb="48" data-fatg="6" name="pranzo-main"><span>Pasta/Riso 60-70g + Tonno o Pollo 120g + Verdure 200g</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="410" data-prot="32" data-carb="45" data-fatg="14" name="pranzo-main"><span>Pasta/Riso 60-70g + 2 Uova + 150g Albume + Verdure 200g</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" data-carb="44" data-fatg="6" name="pranzo-main"><span>Pane 70-80g + Proteina completa + Verdure 200g</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" data-carb="42" data-fatg="6" name="pranzo-main"><span>Patate 250-300g + Proteina completa + Verdure 200g</span></label>
+            </div>
+            <div class="section-subtitle">Uscite</div>
+            <div class="checkbox-group">
+                <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" data-carb="55" data-fatg="18" name="pranzo-main"><span>Pranzo fuori – in linea con il piano</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="650" data-prot="20" data-carb="60" data-fatg="30" name="pranzo-main"><span>Pranzo fuori – ristorante, primo/secondo condiviso + vino</span></label>
+            </div>
+            <div class="section-subtitle">Contorno e Condimento</div>
+            <div class="checkbox-group">
+                <label class="check-item"><input type="checkbox" data-kcal="30" data-prot="1" data-carb="5" data-fatg="0"><span>100–150g Verdura cotta</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="45" data-prot="0" data-carb="0" data-fatg="5"><span>5g Olio EVO</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="90" data-prot="0" data-carb="0" data-fatg="10"><span>10g Olio EVO</span></label>
             </div>
         </div>
     </div>
@@ -376,34 +398,34 @@
         </div>
         <div class="section-subtitle">Proteine — scegli 1 opzione</div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="130" data-prot="28" data-fat="magra" name="cena-prot"><span>120g Pollo / Tacchino</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="120" data-prot="28" data-fat="magra" name="cena-prot"><span>120g Tonno al naturale sgocciolato</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="110" data-prot="26" data-fat="magra" name="cena-prot"><span>150g Nasello</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="160" data-prot="31" data-fat="media" name="cena-prot"><span>150g Orata / Spigola</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="180" data-prot="28" data-fat="media" name="cena-prot"><span>130g Macinato magro</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="160" data-prot="25" data-fat="media" name="cena-prot"><span>180-200g Tofu al naturale</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="210" data-prot="29" data-fat="media" name="cena-prot"><span>2 Uova + 150g Albume</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="300" data-prot="29" data-fat="grassa" name="cena-prot"><span>100g Mozzarella + 100g Albume <span class="badge-max">(max 1×/settimana)</span></span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="200" data-prot="29" data-fat="grassa" name="cena-prot"><span>40g Grana / Parmigiano + 150g Albume <span class="badge-max">(max 1×/settimana)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="130" data-prot="28" data-carb="0" data-fatg="3" data-fat="magra" name="cena-prot"><span>120g Pollo / Tacchino</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="120" data-prot="28" data-carb="0" data-fatg="2" data-fat="magra" name="cena-prot"><span>120g Tonno al naturale sgocciolato</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="110" data-prot="26" data-carb="0" data-fatg="2" data-fat="magra" name="cena-prot"><span>150g Nasello</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="160" data-prot="31" data-carb="0" data-fatg="5" data-fat="media" name="cena-prot"><span>150g Orata / Spigola</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="180" data-prot="28" data-carb="0" data-fatg="7" data-fat="media" name="cena-prot"><span>130g Macinato magro</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="160" data-prot="25" data-carb="4" data-fatg="8" data-fat="media" name="cena-prot"><span>180-200g Tofu al naturale</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="210" data-prot="29" data-carb="2" data-fatg="10" data-fat="media" name="cena-prot"><span>2 Uova + 150g Albume</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="300" data-prot="29" data-carb="3" data-fatg="18" data-fat="grassa" data-formaggio="true" name="cena-prot" id="cena-mozzarella"><span>100g Mozzarella + 100g Albume <span class="badge-max">(max 1×/settimana)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="200" data-prot="29" data-carb="1" data-fatg="10" data-fat="grassa" data-formaggio="true" name="cena-prot" id="cena-grana"><span>40g Grana / Parmigiano + 150g Albume <span class="badge-max">(max 1×/settimana)</span></span></label>
         </div>
         <div class="section-subtitle">Carboidrati — scegli 1 opzione</div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="270" data-prot="8" name="cena-carb"><span>70-80g Pasta / Riso / Grano Saraceno</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="210" data-prot="6" name="cena-carb"><span>80g Pane</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="220" data-prot="5" name="cena-carb"><span>250-300g Patate</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="270" data-prot="8" data-carb="55" data-fatg="1" name="cena-carb"><span>70-80g Pasta / Riso / Grano Saraceno</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="210" data-prot="6" data-carb="42" data-fatg="1" name="cena-carb"><span>80g Pane</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="220" data-prot="5" data-carb="45" data-fatg="0" name="cena-carb"><span>250-300g Patate</span></label>
         </div>
         <div class="section-subtitle">Contorno e Condimento Cena</div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="40" data-prot="2"><span>200g Verdura cotta</span></label>
-            <label class="check-item" id="item-olio-5"><input type="checkbox" data-kcal="45" data-prot="0" id="check-olio-5" name="cena-olio"><span>5g Olio EVO</span></label>
-            <label class="check-item" id="item-olio-10"><input type="checkbox" data-kcal="90" data-prot="0" id="check-olio-10" name="cena-olio"><span>10g Olio EVO</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="40" data-prot="2" data-carb="6" data-fatg="0"><span>200g Verdura cotta</span></label>
+            <label class="check-item" id="item-olio-5"><input type="checkbox" data-kcal="45" data-prot="0" data-carb="0" data-fatg="5" id="check-olio-5" name="cena-olio"><span>5g Olio EVO</span></label>
+            <label class="check-item" id="item-olio-10"><input type="checkbox" data-kcal="90" data-prot="0" data-carb="0" data-fatg="10" id="check-olio-10" name="cena-olio"><span>10g Olio EVO</span></label>
         </div>
         <div class="section-subtitle">Oppure: sostituisce l'intero pasto</div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="300" data-prot="22" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Barretta proteica (20-25g prot) + banana/frutto se fame</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="400" data-prot="25" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena" data-toast="true"><span>Toast prosciutto e formaggio <span class="badge-max">(max 1×/settimana)</span></span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Cena fuori – in linea con il piano</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="650" data-prot="20" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Cena fuori – libero (ristorante)</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="300" data-prot="22" data-carb="30" data-fatg="8" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Barretta proteica (20-25g prot) + banana/frutto se fame</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="400" data-prot="25" data-carb="35" data-fatg="18" data-formaggio="true" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena" data-toast="true"><span>Toast prosciutto e formaggio <span class="badge-max">(max 1×/settimana)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="550" data-prot="35" data-carb="50" data-fatg="20" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Cena fuori – in linea con il piano</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="650" data-prot="20" data-carb="55" data-fatg="30" name="cena-fuori" class="meal-replace-checkbox" data-target-card="sec-cena"><span>Cena fuori – libero (ristorante)</span></label>
         </div>
     </div>
 
@@ -419,13 +441,20 @@
             <button type="button" class="btn-option" data-value="2" onclick="selectVino(this)">2</button>
         </div>
         <div id="vino-counter" class="counter-note"></div>
+        <div class="section-subtitle" style="margin-top:14px;">Aperitivo di oggi</div>
+        <div class="button-group" data-group="aperitivo">
+            <button type="button" class="btn-option" data-kcal="0" data-carb="0" data-fatg="0" onclick="selectOption(this)">No</button>
+            <button type="button" class="btn-option" data-kcal="170" data-carb="12" data-fatg="10" onclick="selectOption(this)">Sì</button>
+        </div>
+        <div class="cycle-note">Se "Sì", l'olio in cena si riduce automaticamente a 5g; regola tu la cena (proteina più leggera, meno carbo) in base a cosa hai preso.</div>
+        <div id="formaggio-counter" class="counter-note" style="margin-top:8px;"></div>
         <div class="section-subtitle" style="margin-top:14px;">Altri extra</div>
         <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="280" data-prot="4"><span>Brioche</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="250" data-prot="3"><span>Barretta dolce (Bounty/Twix/Mars e simili)</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="200" data-prot="20"><span>Barretta proteica</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="130" data-prot="4"><span>Pane extra</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="50" data-prot="0"><span>Marmellata extra</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="280" data-prot="4" data-carb="35" data-fatg="12"><span>Brioche</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="250" data-prot="3" data-carb="30" data-fatg="12"><span>Barretta dolce (Bounty/Twix/Mars e simili)</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="200" data-prot="20" data-carb="15" data-fatg="6"><span>Barretta proteica</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="130" data-prot="4" data-carb="25" data-fatg="1"><span>Pane extra</span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="50" data-prot="0" data-carb="12" data-fatg="0"><span>Marmellata extra</span></label>
         </div>
     </div>
 
@@ -630,6 +659,8 @@
         const checkboxes = document.querySelectorAll('input[type="checkbox"]');
         const totalKcalEl = document.getElementById('total-kcal');
         const totalProtEl = document.getElementById('total-prot');
+        const totalCarbEl = document.getElementById('total-carb');
+        const totalFatEl = document.getElementById('total-fat');
 
         checkboxes.forEach((cb, idx) => { if (!cb.id) cb.id = 'diet-cb-' + idx; });
 
@@ -640,19 +671,21 @@
         const itemOlio10 = document.getElementById('item-olio-10');
 
         function updateTotalsAndRules() {
-            let kcal = 0, prot = 0;
+            let kcal = 0, prot = 0, carb = 0, fat = 0;
             const cenaFuoriSelezionata = document.querySelector('input[name="cena-fuori"]:checked');
+            const aperitivoBtn = document.querySelector('[data-group="aperitivo"] .active');
 
             if (!cenaFuoriSelezionata) {
                 const selectedCenaProt = document.querySelector('input[name="cena-prot"]:checked');
                 const fatType = selectedCenaProt ? selectedCenaProt.dataset.fat : null;
                 const hasNoci = checkNoci.checked;
+                const aperitivoAttivo = aperitivoBtn && aperitivoBtn.textContent.trim() === 'Sì';
 
                 if (fatType === 'grassa') {
                     itemOlio5.classList.add('disabled'); itemOlio10.classList.add('disabled');
                     checkOlio5.checked = false; checkOlio10.checked = false;
                     checkOlio5.disabled = true; checkOlio10.disabled = true;
-                } else if (fatType === 'media' || hasNoci) {
+                } else if (fatType === 'media' || hasNoci || aperitivoAttivo) {
                     itemOlio5.classList.remove('disabled'); itemOlio10.classList.add('disabled');
                     checkOlio10.checked = false;
                     checkOlio5.disabled = false; checkOlio10.disabled = true;
@@ -666,11 +699,28 @@
                 if (cb.checked) {
                     kcal += parseInt(cb.dataset.kcal || 0, 10);
                     prot += parseInt(cb.dataset.prot || 0, 10);
+                    carb += parseInt(cb.dataset.carb || 0, 10);
+                    fat += parseInt(cb.dataset.fatg || 0, 10);
                 }
             });
 
+            // Vino: stima ~120 kcal e ~4g carbo a bicchiere
+            const vinoBtn = document.querySelector('[data-group="vino"] .active');
+            const vinoBicchieri = vinoBtn ? parseInt(vinoBtn.dataset.value, 10) : 0;
+            kcal += vinoBicchieri * 120;
+            carb += vinoBicchieri * 4;
+
+            // Aperitivo: kcal/carbo/grassi del cibo che accompagna il vino
+            if (aperitivoBtn) {
+                kcal += parseInt(aperitivoBtn.dataset.kcal || 0, 10);
+                carb += parseInt(aperitivoBtn.dataset.carb || 0, 10);
+                fat += parseInt(aperitivoBtn.dataset.fatg || 0, 10);
+            }
+
             totalKcalEl.textContent = kcal;
             totalProtEl.textContent = prot + ' g';
+            totalCarbEl.textContent = carb + ' g';
+            totalFatEl.textContent = fat + ' g';
         }
         window.updateTotalsAndRules = updateTotalsAndRules;
 
@@ -822,6 +872,7 @@
         const group = btn.parentElement;
         group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        if (window.updateTotalsAndRules) window.updateTotalsAndRules();
         salvaBozza();
     }
 
@@ -840,17 +891,22 @@
         const sonno = document.querySelector('[data-group="sonno"] .active');
         const acqua = document.querySelector('[data-group="acqua"] .active');
         const vinoBtn = document.querySelector('[data-group="vino"] .active');
+        const aperitivoBtn = document.querySelector('[data-group="aperitivo"] .active');
         const pesoEl = document.querySelector('#weight-picker .picker-item.selected');
         const notesEl = document.getElementById('diary-notes');
 
         const vinoBicchieri = vinoBtn ? parseInt(vinoBtn.dataset.value, 10) : 0;
         const nociSelezionate = document.getElementById('check-noci') ? document.getElementById('check-noci').checked : false;
         const toastSelezionato = document.querySelectorAll('input[data-toast="true"]:checked').length > 0;
+        const formaggioUsato = document.querySelectorAll('input[data-formaggio="true"]:checked').length > 0;
+        const aperitivoTipo = aperitivoBtn ? aperitivoBtn.textContent.trim() : 'Nessuno';
 
         return {
             data: getDataOggi(),
             kcal: parseInt(document.getElementById('total-kcal').textContent, 10) || 0,
             proteine: document.getElementById('total-prot').textContent,
+            carboidrati: document.getElementById('total-carb').textContent,
+            grassi: document.getElementById('total-fat').textContent,
             pasti_selezionati: dietCbs,
             evacuazione: evac ? evac.textContent.trim() : null,
             bristol: bristol ? bristol.textContent.trim() : null,
@@ -862,7 +918,9 @@
             note: notesEl ? notesEl.value : '',
             vino_bicchieri: vinoBicchieri,
             noci_25g: nociSelezionate,
-            toast_prosciutto_formaggio: toastSelezionato
+            toast_prosciutto_formaggio: toastSelezionato,
+            formaggio_usato: formaggioUsato,
+            aperitivo_tipo: aperitivoTipo
         };
     }
 
@@ -930,6 +988,7 @@
         clickMatchingButton('allenamento', stato.allenamento);
         clickMatchingButton('sonno', stato.sonno);
         clickMatchingButton('acqua', stato.acqua);
+        if (stato.aperitivo_tipo) clickMatchingButton('aperitivo', stato.aperitivo_tipo);
 
         if (stato.vino_bicchieri !== undefined && stato.vino_bicchieri !== null) {
             const vinoBtn = document.querySelector(`[data-group="vino"] .btn-option[data-value="${stato.vino_bicchieri}"]`);
@@ -984,19 +1043,22 @@
     async function caricaContatoriSettimana() {
         const vinoEl = document.getElementById('vino-counter');
         const nociEl = document.getElementById('noci-counter');
+        const formaggioEl = document.getElementById('formaggio-counter');
         if (!supabaseClient || !currentUser) return;
         try {
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
             const dataLimite = sevenDaysAgo.toISOString().split('T')[0];
             const { data, error } = await supabaseClient
-                .from('diario').select('vino_bicchieri, noci_25g')
+                .from('diario').select('vino_bicchieri, noci_25g, formaggio_usato')
                 .eq('user_id', currentUser.id).gte('data', dataLimite);
             if (error) { console.error('Errore caricamento contatori settimana:', error); return; }
             const vinoTot = (data || []).reduce((s, r) => s + (r.vino_bicchieri || 0), 0);
             const nociTot = (data || []).filter(r => r.noci_25g).length;
+            const formaggioTot = (data || []).filter(r => r.formaggio_usato).length;
             if (vinoEl) vinoEl.textContent = `${vinoTot}/2 bicchieri questa settimana`;
             if (nociEl) nociEl.textContent = `${nociTot}/2-3 questa settimana`;
+            if (formaggioEl) formaggioEl.textContent = `Formaggio: ${formaggioTot}/1 questa settimana`;
         } catch (e) { console.error('Errore caricamento contatori settimana:', e); }
     }
 
@@ -1039,6 +1101,7 @@
         const group = btn.parentElement;
         group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
+        if (window.updateTotalsAndRules) window.updateTotalsAndRules();
         salvaBozza();
     }
 
@@ -1053,6 +1116,8 @@
             data: stato.data,
             kcal: stato.kcal,
             proteine: stato.proteine,
+            carboidrati: stato.carboidrati,
+            grassi: stato.grassi,
             pasti_selezionati: stato.pasti_selezionati,
             evacuazione: stato.evacuazione,
             bristol: stato.bristol,
@@ -1064,7 +1129,9 @@
             note: stato.note,
             vino_bicchieri: stato.vino_bicchieri,
             noci_25g: stato.noci_25g,
-            toast_prosciutto_formaggio: stato.toast_prosciutto_formaggio
+            toast_prosciutto_formaggio: stato.toast_prosciutto_formaggio,
+            formaggio_usato: stato.formaggio_usato,
+            aperitivo_tipo: stato.aperitivo_tipo
         };
 
         const { data, error } = await supabaseClient.from('diario').upsert([datiDaSalvare], { onConflict: 'user_id,data' });
@@ -1106,6 +1173,8 @@
         const oggi = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
         const kcal = document.getElementById('total-kcal').textContent;
         const prot = document.getElementById('total-prot').textContent;
+        const carb = document.getElementById('total-carb').textContent;
+        const fat = document.getElementById('total-fat').textContent;
         const note = document.getElementById('diary-notes').value || 'Nessuna nota inserita.';
 
         const evac = document.querySelector('[data-group="evacuazione"] .active');
@@ -1116,6 +1185,7 @@
         const acqua = document.querySelector('[data-group="acqua"] .active');
         const peso = document.querySelector('#weight-picker .picker-item.selected');
         const vinoBtn = document.querySelector('[data-group="vino"] .active');
+        const aperitivoBtn = document.querySelector('[data-group="aperitivo"] .active');
 
         const cicloBadge = document.getElementById('cycle-days-left');
         const faseAttivaBox = document.querySelector('.phase-box.active');
@@ -1129,9 +1199,10 @@
             <h1>Resoconto Giornaliero - Piano Nutrizionale</h1>
             <div class="pdate">Data: ${oggi}</div>
             <div class="summary-box">
-                <strong>Totale kcal:</strong> ${kcal} kcal &nbsp;|&nbsp; <strong>Proteine:</strong> ${prot}
+                <strong>Totale kcal:</strong> ${kcal} kcal &nbsp;|&nbsp; <strong>Proteine:</strong> ${prot} &nbsp;|&nbsp; <strong>Carbo:</strong> ${carb} &nbsp;|&nbsp; <strong>Grassi:</strong> ${fat}
                 ${peso ? `<br><strong>Peso registrato:</strong> ${peso.textContent}` : ''}
                 ${vinoBtn ? `<br><strong>Vino:</strong> ${vinoBtn.textContent} bicchieri` : ''}
+                ${aperitivoBtn && aperitivoBtn.textContent.trim() !== 'Nessuno' ? `<br><strong>Aperitivo:</strong> ${aperitivoBtn.textContent}` : ''}
                 ${testoFaseCiclo ? `<br><strong>Fase del ciclo:</strong> ${testoFaseCiclo}` : ''}
             </div>
             <h2>Pasti della Giornata</h2>
