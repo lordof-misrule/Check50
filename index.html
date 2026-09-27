@@ -370,12 +370,20 @@
                 <label class="check-item"><input type="checkbox" data-kcal="250" data-prot="20" data-carb="25" data-fatg="6" name="pranzo-main"><span>Emergenza: Barretta (18-20g prot) + Banana o Crackers</span></label>
                 <label class="check-item"><input type="checkbox" data-kcal="400" data-prot="25" data-carb="35" data-fatg="18" data-formaggio="true" name="pranzo-main" data-toast="true"><span>Toast prosciutto e formaggio <span class="badge-max">(max 1×/settimana)</span></span></label>
             </div>
-            <div class="section-subtitle">A casa — scegli 1 opzione</div>
+            <div class="section-subtitle">A casa — Carboidrato (facoltativo, al massimo 1)</div>
             <div class="checkbox-group">
-                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" data-carb="48" data-fatg="6" name="pranzo-main"><span>Pasta/Riso 60-70g + Tonno o Pollo 120g + Verdure 200g</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="410" data-prot="32" data-carb="45" data-fatg="14" name="pranzo-main"><span>Pasta/Riso 60-70g + 2 Uova + 150g Albume + Verdure 200g</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" data-carb="44" data-fatg="6" name="pranzo-main"><span>Pane 70-80g + Proteina completa + Verdure 200g</span></label>
-                <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="28" data-carb="42" data-fatg="6" name="pranzo-main"><span>Patate 250-300g + Proteina completa + Verdure 200g</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="270" data-prot="8" data-carb="55" data-fatg="1" name="pranzo-carb"><span>Pasta/Riso/Grano Saraceno 60-70g</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="210" data-prot="6" data-carb="42" data-fatg="1" name="pranzo-carb"><span>Pane 70-80g</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="220" data-prot="5" data-carb="45" data-fatg="0" name="pranzo-carb"><span>Patate 250-300g</span></label>
+            </div>
+            <div class="section-subtitle">A casa — Proteina (scegli 1)</div>
+            <div class="checkbox-group">
+                <label class="check-item"><input type="checkbox" data-kcal="210" data-prot="29" data-carb="2" data-fatg="10" name="pranzo-prot"><span>2 Uova + 150g Albume</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="130" data-prot="28" data-carb="0" data-fatg="3" name="pranzo-prot"><span>120g Pollo / Tacchino</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="110" data-prot="26" data-carb="0" data-fatg="2" name="pranzo-prot"><span>150g Nasello / Merluzzo</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="120" data-prot="28" data-carb="0" data-fatg="2" name="pranzo-prot"><span>100-120g Tonno al naturale sgocciolato</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="180" data-prot="28" data-carb="0" data-fatg="7" name="pranzo-prot"><span>130g Macinato magro</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="160" data-prot="25" data-carb="4" data-fatg="8" name="pranzo-prot"><span>180-200g Tofu al naturale</span></label>
             </div>
             <div class="section-subtitle">Uscite</div>
             <div class="checkbox-group">
@@ -384,7 +392,7 @@
             </div>
             <div class="section-subtitle">Contorno e Condimento</div>
             <div class="checkbox-group">
-                <label class="check-item"><input type="checkbox" data-kcal="30" data-prot="1" data-carb="5" data-fatg="0"><span>100–150g Verdura cotta</span></label>
+                <label class="check-item"><input type="checkbox" data-kcal="40" data-prot="2" data-carb="6" data-fatg="0"><span>200g Verdura cotta</span></label>
                 <label class="check-item"><input type="checkbox" data-kcal="45" data-prot="0" data-carb="0" data-fatg="5"><span>5g Olio EVO</span></label>
                 <label class="check-item"><input type="checkbox" data-kcal="90" data-prot="0" data-carb="0" data-fatg="10"><span>10g Olio EVO</span></label>
             </div>
@@ -447,6 +455,9 @@
             <button type="button" class="btn-option" data-kcal="170" data-carb="12" data-fatg="10" onclick="selectOption(this)">Sì</button>
         </div>
         <div class="cycle-note">Se "Sì", l'olio in cena si riduce automaticamente a 5g; regola tu la cena (proteina più leggera, meno carbo) in base a cosa hai preso.</div>
+        <div class="checkbox-group" style="margin-top:8px;">
+            <label class="check-item"><input type="checkbox" data-kcal="80" data-prot="4" data-carb="1" data-fatg="6" data-formaggio="true"><span>L'aperitivo includeva formaggio <span class="badge-max">(conta nella quota 1×/settimana)</span></span></label>
+        </div>
         <div id="formaggio-counter" class="counter-note" style="margin-top:8px;"></div>
         <div class="section-subtitle" style="margin-top:14px;">Altri extra</div>
         <div class="checkbox-group">
