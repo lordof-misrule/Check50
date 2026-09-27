@@ -71,15 +71,17 @@
         }
 
         /* Fixed Top Summary Bar */
-        .summary-bar {
+        .summary-sticky {
             position: sticky;
             top: calc(10px + env(safe-area-inset-top, 0px));
             z-index: 100;
+            margin-bottom: 20px;
+        }
+        .summary-bar {
             background: var(--primary);
             color: white;
-            border-radius: 12px;
+            border-radius: 12px 12px 0 0;
             padding: 12px 20px;
-            margin-bottom: 20px;
             display: flex;
             justify-content: space-around;
             align-items: center;
@@ -92,7 +94,15 @@
         .summary-value.val-green { color: #2ecc71; }
         .summary-value.val-red { color: #e74c3c; }
         .summary-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.9; }
-        .target-note { text-align: center; font-size: 0.75rem; color: var(--text-muted); margin: -12px 0 16px 0; }
+        .target-note {
+            text-align: center;
+            font-size: 0.72rem;
+            color: #ffffffcc;
+            background: #1a2530;
+            padding: 6px 10px 8px;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
 
         .card {
             background: var(--card-bg);
@@ -278,25 +288,27 @@
         </div>
     </header>
 
-    <div class="summary-bar">
-        <div class="summary-item">
-            <div class="summary-value" id="total-kcal">0</div>
-            <div class="summary-label">Kcal</div>
+    <div class="summary-sticky">
+        <div class="summary-bar">
+            <div class="summary-item">
+                <div class="summary-value" id="total-kcal">0</div>
+                <div class="summary-label">Kcal</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value" id="total-prot">0 g</div>
+                <div class="summary-label">Proteine</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value" id="total-carb">0 g</div>
+                <div class="summary-label">Carboidrati</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-value" id="total-fat">0 g</div>
+                <div class="summary-label">Grassi</div>
+            </div>
         </div>
-        <div class="summary-item">
-            <div class="summary-value" id="total-prot">0 g</div>
-            <div class="summary-label">Proteine</div>
-        </div>
-        <div class="summary-item">
-            <div class="summary-value" id="total-carb">0 g</div>
-            <div class="summary-label">Carboidrati</div>
-        </div>
-        <div class="summary-item">
-            <div class="summary-value" id="total-fat">0 g</div>
-            <div class="summary-label">Grassi</div>
-        </div>
+        <div class="target-note" id="target-note">Target giorno: proteine 80-85g · carboidrati 160-165g · grassi ~45g</div>
     </div>
-    <div class="target-note">Target giorno: proteine 80-85g · carboidrati 160-165g · grassi ~45g</div>
 
     <div class="card">
         <div class="card-header">
@@ -741,6 +753,24 @@
             applyTargetColor(totalProtEl, prot, 80, 85);
             applyTargetColor(totalCarbEl, carb, 160, 165);
             applyTargetColor(totalFatEl, fat, 40, 50);
+
+            updateTargetNote(prot, carb, fat);
+        }
+
+        function targetDiffText(label, value, min, max) {
+            if (value < min) return `${label}: mancano ${min - value}g`;
+            if (value > max) return `${label}: +${value - max}g oltre`;
+            return `${label}: nel target`;
+        }
+
+        function updateTargetNote(prot, carb, fat) {
+            const el = document.getElementById('target-note');
+            if (!el) return;
+            el.textContent = [
+                targetDiffText('Proteine', prot, 80, 85),
+                targetDiffText('Carbo', carb, 160, 165),
+                targetDiffText('Grassi', fat, 40, 50)
+            ].join(' · ');
         }
 
         function applyTargetColor(el, value, min, max) {
