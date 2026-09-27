@@ -939,7 +939,13 @@
     function raccogliStatoCorrente() {
         const dietCbs = Array.from(document.querySelectorAll('input[type="checkbox"]'))
             .filter(cb => cb.checked)
-            .map(cb => { const span = cb.parentElement.querySelector('span'); return span ? span.textContent.trim() : cb.id; });
+            .map(cb => {
+                const span = cb.parentElement.querySelector('span');
+                const label = span ? span.textContent.trim() : cb.id;
+                const card = cb.closest('.card');
+                const sectionId = card ? card.id : 'unknown';
+                return sectionId + '|||' + label;
+            });
 
         const evac = document.querySelector('[data-group="evacuazione"] .active');
         const bristol = document.querySelector('[data-group="bristol"] .active');
@@ -1029,10 +1035,22 @@
 
         if (Array.isArray(stato.pasti_selezionati)) {
             stato.pasti_selezionati.forEach(valore => {
-                let match = document.getElementById(valore);
-                if (!match) {
-                    match = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-                        .find(cb => { const span = cb.parentElement.querySelector('span'); return span && span.textContent.trim() === String(valore).trim(); });
+                let match = null;
+                const testo = String(valore);
+                if (testo.includes('|||')) {
+                    const [sectionId, label] = testo.split('|||');
+                    const scope = sectionId && sectionId !== 'unknown' ? document.getElementById(sectionId) : document;
+                    if (scope) {
+                        match = Array.from(scope.querySelectorAll('input[type="checkbox"]'))
+                            .find(cb => { const span = cb.parentElement.querySelector('span'); return span && span.textContent.trim() === label.trim(); });
+                    }
+                } else {
+                    // Formato vecchio (senza sezione): compatibilità con bozze salvate prima di questa correzione
+                    match = document.getElementById(testo);
+                    if (!match) {
+                        match = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+                            .find(cb => { const span = cb.parentElement.querySelector('span'); return span && span.textContent.trim() === testo.trim(); });
+                    }
                 }
                 if (match) match.checked = true;
             });
