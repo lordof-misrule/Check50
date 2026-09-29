@@ -1285,13 +1285,27 @@
         if (!supabaseClient || !currentUser) { el.innerHTML = ''; return; }
         try {
             const { data, error } = await supabaseClient
-                .from('diario').select('data, kcal, proteine')
+                .from('diario').select('data, kcal, proteine, carboidrati, grassi')
                 .eq('user_id', currentUser.id).order('data', { ascending: false }).limit(7);
             if (error) { console.error('Errore caricamento storico settimana:', error); return; }
             if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted); font-style:italic;">Nessuno storico ancora disponibile.</div>'; return; }
-            el.innerHTML = data.map(r =>
+
+            const parseNum = (v) => { const n = parseFloat(String(v || '0').replace(/[^\d.-]/g, '')); return isNaN(n) ? 0 : n; };
+            const n = data.length;
+            const avgKcal = Math.round(data.reduce((s, r) => s + parseNum(r.kcal), 0) / n);
+            const avgProt = Math.round(data.reduce((s, r) => s + parseNum(r.proteine), 0) / n);
+            const avgCarb = Math.round(data.reduce((s, r) => s + parseNum(r.carboidrati), 0) / n);
+            const avgFat = Math.round(data.reduce((s, r) => s + parseNum(r.grassi), 0) / n);
+
+            const avgHtml = `<div style="display:flex; justify-content:space-between; padding:6px 0 10px; margin-bottom:6px; border-bottom:2px solid var(--border); font-weight:700; color:var(--primary);">
+                <span>Media (${n} giorni)</span><span>${avgKcal} kcal · ${avgProt}g P · ${avgCarb}g C · ${avgFat}g G</span>
+            </div>`;
+
+            const rowsHtml = data.map(r =>
                 `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border);"><span>${formatDataBreve(r.data)}</span><span>${r.kcal || 0} kcal · ${r.proteine || '0 g'}</span></div>`
             ).join('');
+
+            el.innerHTML = avgHtml + rowsHtml;
         } catch (e) { console.error('Errore caricamento storico settimana:', e); }
     }
 
