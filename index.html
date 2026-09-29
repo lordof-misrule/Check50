@@ -161,6 +161,25 @@
             margin: 6px 0 4px 0;
             display: inline-block;
         }
+        .counter-note.val-green { color: #1b8744; background: #eafaf1; }
+        .counter-note.val-yellow { color: #b7791f; background: #fff8e1; }
+        .counter-note.val-red { color: #c0392b; background: #fdecea; }
+
+        .stepper-group { display: flex; flex-direction: column; gap: 10px; }
+        .stepper-item {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; padding: 6px 0;
+        }
+        .stepper-label { font-size: 0.95rem; flex: 1; }
+        .stepper-controls { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+        .stepper-btn {
+            width: 30px; height: 30px; border-radius: 50%;
+            border: 1px solid var(--accent); background: var(--card-bg);
+            color: var(--accent); font-size: 1.1rem; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;
+        }
+        .stepper-btn:active { background: #eafaf1; }
+        .stepper-value { min-width: 20px; text-align: center; font-weight: 600; font-size: 0.95rem; }
 
         /* Cycle Component */
         .cycle-card { border-left: 6px solid var(--pink); }
@@ -320,6 +339,13 @@
         <div class="chart-empty-note" id="chart-empty-note">Nessuno storico ancora disponibile: salva i tuoi dati nel Cloud per iniziare a costruirlo.</div>
     </div>
 
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Ultimi 7 giorni</span>
+        </div>
+        <div id="storico-settimana" style="font-size:0.85rem;"></div>
+    </div>
+
     <div class="card cycle-card">
         <div class="cycle-status">
             <span>Stato Ciclo Ormonale</span>
@@ -351,6 +377,7 @@
             <label class="check-item"><input type="checkbox" data-kcal="330" data-prot="22" data-carb="30" data-fatg="10" name="colazione"><span>French Toast: Pane 60g + 1 Uovo + Albume 120-150g + Marmellata 20g</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="300" data-prot="20" data-carb="40" data-fatg="6" name="colazione"><span>Pane 60g + Marmellata 20g + 1 Uovo + Albume 150g</span></label>
             <label class="check-item"><input type="checkbox" data-kcal="350" data-prot="18" data-carb="45" data-fatg="10" data-formaggio="true" name="colazione"><span>Pane 60-80g + Ricotta di capra 100g + Marmellata 15-20g <span class="badge-max">(max 1×/settimana)</span></span></label>
+            <label class="check-item"><input type="checkbox" data-kcal="340" data-prot="10" data-carb="49" data-fatg="12" name="colazione"><span>Pane 60g + Crema di arachidi 20g + Marmellata 25g</span></label>
         </div>
         <div class="section-subtitle">Fuori (sostituisce quella di casa)</div>
         <div class="checkbox-group">
@@ -477,12 +504,47 @@
         </div>
         <div id="formaggio-counter" class="counter-note" style="margin-top:8px;"></div>
         <div class="section-subtitle" style="margin-top:14px;">Altri extra</div>
-        <div class="checkbox-group">
-            <label class="check-item"><input type="checkbox" data-kcal="280" data-prot="4" data-carb="35" data-fatg="12"><span>Brioche</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="250" data-prot="3" data-carb="30" data-fatg="12"><span>Barretta dolce (Bounty/Twix/Mars e simili)</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="200" data-prot="20" data-carb="15" data-fatg="6"><span>Barretta proteica</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="130" data-prot="4" data-carb="25" data-fatg="1"><span>Pane extra</span></label>
-            <label class="check-item"><input type="checkbox" data-kcal="50" data-prot="0" data-carb="12" data-fatg="0"><span>Marmellata extra</span></label>
+        <div class="stepper-group">
+            <div class="stepper-item" data-kcal="280" data-prot="4" data-carb="35" data-fatg="12" data-qty="0">
+                <span class="stepper-label">Brioche</span>
+                <div class="stepper-controls">
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,-1)">–</button>
+                    <span class="stepper-value">0</span>
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,1)">+</button>
+                </div>
+            </div>
+            <div class="stepper-item" data-kcal="250" data-prot="3" data-carb="30" data-fatg="12" data-qty="0">
+                <span class="stepper-label">Barretta dolce (Bounty/Twix/Mars e simili)</span>
+                <div class="stepper-controls">
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,-1)">–</button>
+                    <span class="stepper-value">0</span>
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,1)">+</button>
+                </div>
+            </div>
+            <div class="stepper-item" data-kcal="200" data-prot="20" data-carb="15" data-fatg="6" data-qty="0">
+                <span class="stepper-label">Barretta proteica</span>
+                <div class="stepper-controls">
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,-1)">–</button>
+                    <span class="stepper-value">0</span>
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,1)">+</button>
+                </div>
+            </div>
+            <div class="stepper-item" data-kcal="130" data-prot="4" data-carb="25" data-fatg="1" data-qty="0">
+                <span class="stepper-label">Pane extra</span>
+                <div class="stepper-controls">
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,-1)">–</button>
+                    <span class="stepper-value">0</span>
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,1)">+</button>
+                </div>
+            </div>
+            <div class="stepper-item" data-kcal="50" data-prot="0" data-carb="12" data-fatg="0" data-qty="0">
+                <span class="stepper-label">Marmellata extra</span>
+                <div class="stepper-controls">
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,-1)">–</button>
+                    <span class="stepper-value">0</span>
+                    <button type="button" class="stepper-btn" onclick="changeStepper(this,1)">+</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -552,6 +614,12 @@
         <textarea id="diary-notes" placeholder="Inserisci note su energia, alimentazione o altri sintomi..."></textarea>
     </div>
 
+    <div class="card" id="riepilogo-giornata">
+        <div class="card-header">
+            <span class="card-title">Riepilogo di oggi</span>
+        </div>
+        <ul id="riepilogo-list" style="padding-left:18px; margin:0; font-size:0.9rem; line-height:1.7;"></ul>
+    </div>
 </div>
 
 <div class="action-bar">
@@ -745,6 +813,17 @@
                 fat += parseInt(aperitivoBtn.dataset.fatg || 0, 10);
             }
 
+            // Altri extra (stepper con quantità)
+            document.querySelectorAll('.stepper-item').forEach(item => {
+                const qty = parseInt(item.dataset.qty, 10) || 0;
+                if (qty > 0) {
+                    kcal += qty * parseInt(item.dataset.kcal || 0, 10);
+                    prot += qty * parseInt(item.dataset.prot || 0, 10);
+                    carb += qty * parseInt(item.dataset.carb || 0, 10);
+                    fat += qty * parseInt(item.dataset.fatg || 0, 10);
+                }
+            });
+
             totalKcalEl.textContent = kcal;
             totalProtEl.textContent = prot + ' g';
             totalCarbEl.textContent = carb + ' g';
@@ -755,6 +834,7 @@
             applyTargetColor(totalFatEl, fat, 40, 50);
 
             updateTargetNote(prot, carb, fat);
+            updateRiepilogoGiornata();
         }
 
         function targetDiffText(label, value, min, max) {
@@ -909,6 +989,7 @@
         caricaStoricoPeso();
         caricaStatoIniziale();
         caricaContatoriSettimana();
+        caricaStoricoSettimana();
     }
 
     // ---- TOGGLE PRANZO ----
@@ -925,6 +1006,24 @@
     }
 
     // ---- VINO ----
+    function updateRiepilogoGiornata() {
+        const el = document.getElementById('riepilogo-list');
+        if (!el || typeof elencoPastiSelezionati !== 'function') return;
+        el.innerHTML = elencoPastiSelezionati();
+    }
+
+    function changeStepper(btn, delta) {
+        const item = btn.closest('.stepper-item');
+        if (!item) return;
+        let qty = parseInt(item.dataset.qty, 10) || 0;
+        qty = Math.max(0, Math.min(5, qty + delta));
+        item.dataset.qty = qty;
+        const valueEl = item.querySelector('.stepper-value');
+        if (valueEl) valueEl.textContent = qty;
+        if (window.updateTotalsAndRules) window.updateTotalsAndRules();
+        salvaBozza();
+    }
+
     function selectVino(btn) {
         const group = btn.parentElement;
         group.querySelectorAll('.btn-option').forEach(b => b.classList.remove('active'));
@@ -962,6 +1061,9 @@
         const nociSelezionate = document.getElementById('check-noci') ? document.getElementById('check-noci').checked : false;
         const toastSelezionato = document.querySelectorAll('input[data-toast="true"]:checked').length > 0;
         const formaggioUsato = document.querySelectorAll('input[data-formaggio="true"]:checked').length > 0;
+        const extrasStepper = Array.from(document.querySelectorAll('.stepper-item'))
+            .map(item => ({ label: item.querySelector('.stepper-label').textContent.trim(), qty: parseInt(item.dataset.qty, 10) || 0 }))
+            .filter(e => e.qty > 0);
         const aperitivoTipo = aperitivoBtn ? aperitivoBtn.textContent.trim() : 'Nessuno';
 
         return {
@@ -983,7 +1085,8 @@
             noci_25g: nociSelezionate,
             toast_prosciutto_formaggio: toastSelezionato,
             formaggio_usato: formaggioUsato,
-            aperitivo_tipo: aperitivoTipo
+            aperitivo_tipo: aperitivoTipo,
+            extras_stepper: extrasStepper
         };
     }
 
@@ -1065,6 +1168,23 @@
         clickMatchingButton('acqua', stato.acqua);
         if (stato.aperitivo_tipo) clickMatchingButton('aperitivo', stato.aperitivo_tipo);
 
+        let extrasStepperData = stato.extras_stepper;
+        if (typeof extrasStepperData === 'string') {
+            try { extrasStepperData = JSON.parse(extrasStepperData); } catch (e) { extrasStepperData = []; }
+        }
+        if (Array.isArray(extrasStepperData)) {
+            extrasStepperData.forEach(e => {
+                const item = Array.from(document.querySelectorAll('.stepper-item'))
+                    .find(it => it.querySelector('.stepper-label').textContent.trim() === e.label);
+                if (item) {
+                    item.dataset.qty = e.qty;
+                    const valueEl = item.querySelector('.stepper-value');
+                    if (valueEl) valueEl.textContent = e.qty;
+                }
+            });
+            if (window.updateTotalsAndRules) window.updateTotalsAndRules();
+        }
+
         if (stato.vino_bicchieri !== undefined && stato.vino_bicchieri !== null) {
             const vinoBtn = document.querySelector(`[data-group="vino"] .btn-option[data-value="${stato.vino_bicchieri}"]`);
             if (vinoBtn) vinoBtn.click();
@@ -1115,15 +1235,37 @@
     }
 
     // ---- CONTATORI SETTIMANALI (vino / noci) ----
+    function getMondayOfThisWeek() {
+        const today = new Date();
+        const day = today.getDay();
+        const diff = day === 0 ? 6 : day - 1;
+        const monday = new Date(today);
+        monday.setDate(today.getDate() - diff);
+        monday.setHours(0, 0, 0, 0);
+        return monday.toISOString().split('T')[0];
+    }
+
+    function applyQuotaMaxColor(el, value, max) {
+        el.classList.remove('val-yellow', 'val-green', 'val-red');
+        if (value > max) el.classList.add('val-red');
+        else if (value === max) el.classList.add('val-yellow');
+        else el.classList.add('val-green');
+    }
+
+    function applyQuotaRangeColor(el, value, min, max) {
+        el.classList.remove('val-yellow', 'val-green', 'val-red');
+        if (value < min) el.classList.add('val-yellow');
+        else if (value > max) el.classList.add('val-red');
+        else el.classList.add('val-green');
+    }
+
     async function caricaContatoriSettimana() {
         const vinoEl = document.getElementById('vino-counter');
         const nociEl = document.getElementById('noci-counter');
         const formaggioEl = document.getElementById('formaggio-counter');
         if (!supabaseClient || !currentUser) return;
         try {
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-            const dataLimite = sevenDaysAgo.toISOString().split('T')[0];
+            const dataLimite = getMondayOfThisWeek();
             const { data, error } = await supabaseClient
                 .from('diario').select('vino_bicchieri, noci_25g, formaggio_usato')
                 .eq('user_id', currentUser.id).gte('data', dataLimite);
@@ -1131,10 +1273,26 @@
             const vinoTot = (data || []).reduce((s, r) => s + (r.vino_bicchieri || 0), 0);
             const nociTot = (data || []).filter(r => r.noci_25g).length;
             const formaggioTot = (data || []).filter(r => r.formaggio_usato).length;
-            if (vinoEl) vinoEl.textContent = `${vinoTot}/2 bicchieri questa settimana`;
-            if (nociEl) nociEl.textContent = `${nociTot}/2-3 questa settimana`;
-            if (formaggioEl) formaggioEl.textContent = `Formaggio: ${formaggioTot}/1 questa settimana`;
+            if (vinoEl) { vinoEl.textContent = `${vinoTot}/2 bicchieri questa settimana`; applyQuotaMaxColor(vinoEl, vinoTot, 2); }
+            if (nociEl) { nociEl.textContent = `${nociTot}/2-3 questa settimana`; applyQuotaRangeColor(nociEl, nociTot, 2, 3); }
+            if (formaggioEl) { formaggioEl.textContent = `Formaggio: ${formaggioTot}/1 questa settimana`; applyQuotaMaxColor(formaggioEl, formaggioTot, 1); }
         } catch (e) { console.error('Errore caricamento contatori settimana:', e); }
+    }
+
+    async function caricaStoricoSettimana() {
+        const el = document.getElementById('storico-settimana');
+        if (!el) return;
+        if (!supabaseClient || !currentUser) { el.innerHTML = ''; return; }
+        try {
+            const { data, error } = await supabaseClient
+                .from('diario').select('data, kcal, proteine')
+                .eq('user_id', currentUser.id).order('data', { ascending: false }).limit(7);
+            if (error) { console.error('Errore caricamento storico settimana:', error); return; }
+            if (!data || !data.length) { el.innerHTML = '<div style="color:var(--text-muted); font-style:italic;">Nessuno storico ancora disponibile.</div>'; return; }
+            el.innerHTML = data.map(r =>
+                `<div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid var(--border);"><span>${formatDataBreve(r.data)}</span><span>${r.kcal || 0} kcal · ${r.proteine || '0 g'}</span></div>`
+            ).join('');
+        } catch (e) { console.error('Errore caricamento storico settimana:', e); }
     }
 
     // ---- FUNZIONI SELEZIONE SINTOMI ----
@@ -1206,7 +1364,8 @@
             noci_25g: stato.noci_25g,
             toast_prosciutto_formaggio: stato.toast_prosciutto_formaggio,
             formaggio_usato: stato.formaggio_usato,
-            aperitivo_tipo: stato.aperitivo_tipo
+            aperitivo_tipo: stato.aperitivo_tipo,
+            extras_stepper: JSON.stringify(stato.extras_stepper || [])
         };
 
         const { data, error } = await supabaseClient.from('diario').upsert([datiDaSalvare], { onConflict: 'user_id,data' });
@@ -1219,6 +1378,7 @@
             salvaBozza();
             caricaStoricoPeso();
             caricaContatoriSettimana();
+            caricaStoricoSettimana();
         }
     }
 
@@ -1238,6 +1398,15 @@
             const selezionati = Array.from(card.querySelectorAll('input[type="checkbox"]:checked'))
                 .map(cb => { const span = cb.parentElement.querySelector('span'); return span ? span.textContent.trim() : ''; })
                 .filter(Boolean);
+            if (sez.id === 'sec-budget') {
+                Array.from(card.querySelectorAll('.stepper-item')).forEach(item => {
+                    const qty = parseInt(item.dataset.qty, 10) || 0;
+                    if (qty > 0) {
+                        const label = item.querySelector('.stepper-label').textContent.trim();
+                        selezionati.push(qty > 1 ? `${label} ×${qty}` : label);
+                    }
+                });
+            }
             if (selezionati.length > 0) html += `<li><strong>${sez.titolo}:</strong> ${selezionati.join(' + ')}</li>`;
         });
         return html || '<li><em>Nessun pasto selezionato.</em></li>';
