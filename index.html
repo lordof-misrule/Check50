@@ -93,6 +93,9 @@
         .summary-value.val-yellow { color: #f1c40f; }
         .summary-value.val-green { color: #2ecc71; }
         .summary-value.val-red { color: #e74c3c; }
+        .avg-metric.val-yellow { color: #d4a017; font-weight: 700; }
+        .avg-metric.val-green { color: #1b8744; font-weight: 700; }
+        .avg-metric.val-red { color: #c0392b; font-weight: 700; }
         .summary-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.3px; opacity: 0.9; }
         .target-note {
             text-align: center;
@@ -250,6 +253,15 @@
         .chart-container { position: relative; height: 220px; width: 100%; margin-top: 10px; }
         .chart-empty-note { font-size: 0.8rem; color: var(--text-muted); font-style: italic; text-align: center; margin-top: 8px; display: none; }
 
+        /* Selettore periodo grafico peso */
+        .range-switch { display: flex; gap: 4px; }
+        .range-btn {
+            border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted);
+            border-radius: 6px; padding: 3px 9px; font-size: 0.72rem; font-weight: 600; cursor: pointer;
+        }
+        .range-btn.active { background: #e8f8f5; border-color: var(--accent); color: #1b8744; }
+        .peso-summary { font-size: 0.8rem; color: var(--text-muted); margin-top: 8px; text-align: center; }
+
         #auth-overlay {
             display: flex; position: fixed; inset: 0; background: rgba(44, 62, 80, 0.94);
             z-index: 3000; align-items: center; justify-content: center; padding: 20px;
@@ -332,10 +344,16 @@
     <div class="card">
         <div class="card-header">
             <span class="card-title">Andamento Peso</span>
+            <div class="range-switch" id="peso-range-switch">
+                <button type="button" class="range-btn" data-mode="30">30 gg</button>
+                <button type="button" class="range-btn" data-mode="90">3 mesi</button>
+                <button type="button" class="range-btn" data-mode="week">Settimane</button>
+            </div>
         </div>
         <div class="chart-container">
             <canvas id="weightChart"></canvas>
         </div>
+        <div class="peso-summary" id="peso-summary"></div>
         <div class="chart-empty-note" id="chart-empty-note">Nessuno storico ancora disponibile: salva i tuoi dati nel Cloud per iniziare a costruirlo.</div>
     </div>
 
@@ -651,7 +669,37 @@
     // ==========================================
     // UTILITY GENERICHE
     // ==========================================
-    function getDataOggi() { return new Date().toISOString().split('T')[0]; }
+
+    // Data in formato YYYY-MM-DD secondo il fuso orario LOCALE (non UTC)
+    function formatLocalISO(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    function getDataOggi() { return formatLocalISO(new Date()); }
+
+    function parseISODate(s) {
+        const [y, m, d] = s.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    function addDays(d, n) {
+        const c = new Date(d);
+        c.setDate(c.getDate() + n);
+        return c;
+    }
+
+    function mondayOf(d) {
+        const c = new Date(d);
+        const day = c.getDay();
+        c.setDate(c.getDate() - (day === 0 ? 6 : day - 1));
+        c.setHours(0, 0, 0, 0);
+        return c;
+    }
+
+    function mediaArr(arr) { return arr.reduce((s, v) => s + v, 0) / arr.length; }
 
     function mostraAvviso(msg, durata = 3000) {
         const toast = document.getElementById('toast');
@@ -672,10 +720,19 @@
 
     function formatDataBreve(dataStr) {
         try {
-            const [y, m, d] = dataStr.split('-').map(Number);
-            const dt = new Date(y, m - 1, d);
+            const dt = parseISODate(dataStr);
             return dt.toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
         } catch (e) { return dataStr; }
+    }
+
+    // Colora un valore in base al target: giallo sotto, verde nel range, rosso sopra.
+    // Globale: serve sia a initApp (totali giornalieri) sia allo storico (medie).
+    function applyTargetColor(el, value, min, max) {
+        if (!el) return;
+        el.classList.remove('val-yellow', 'val-green', 'val-red');
+        if (value < min) el.classList.add('val-yellow');
+        else if (value > max) el.classList.add('val-red');
+        else el.classList.add('val-green');
     }
 
     // ==========================================
@@ -853,12 +910,6 @@
             ].join(' · ');
         }
 
-        function applyTargetColor(el, value, min, max) {
-            el.classList.remove('val-yellow', 'val-green', 'val-red');
-            if (value < min) el.classList.add('val-yellow');
-            else if (value > max) el.classList.add('val-red');
-            else el.classList.add('val-green');
-        }
         window.updateTotalsAndRules = updateTotalsAndRules;
 
         checkboxes.forEach(cb => {
@@ -982,8 +1033,27 @@
         const ctx = document.getElementById('weightChart').getContext('2d');
         weightChartInstance = new Chart(ctx, {
             type: 'line',
-            data: { labels: [], datasets: [{ label: 'Peso (kg)', data: [], borderColor: '#27ae60', backgroundColor: 'rgba(39, 174, 96, 0.1)', borderWidth: 2, fill: true, tension: 0.2 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: '#f1f3f5' } }, x: { grid: { display: false } } } }
+            data: { labels: [], datasets: [] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { boxWidth: 12, boxHeight: 12, font: { size: 11 } } },
+                    tooltip: { callbacks: { label: (c) => `${c.dataset.label}: ${Number(c.parsed.y).toFixed(1)} kg` } }
+                },
+                scales: {
+                    y: { grid: { color: '#f1f3f5' }, ticks: { callback: (v) => Number(v).toFixed(1) } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+
+        document.querySelectorAll('#peso-range-switch .range-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                pesoMode = btn.dataset.mode;
+                try { localStorage.setItem('peso-range', pesoMode); } catch (e) { /* ignora */ }
+                aggiornaGraficoPeso();
+            });
         });
 
         caricaStoricoPeso();
@@ -993,19 +1063,25 @@
     }
 
     // ---- TOGGLE PRANZO ----
-    function inizializzaPranzoToggle() {
+    function setPranzoOpen(open) {
         const header = document.getElementById('pranzo-header');
         const body = document.getElementById('pranzo-body');
         const chevron = document.getElementById('pranzo-chevron');
+        if (!header || !body || !chevron) return;
+        body.style.display = open ? 'block' : 'none';
+        chevron.textContent = open ? '▾' : '▸';
+        header.classList.toggle('open', open);
+    }
+
+    function inizializzaPranzoToggle() {
+        const header = document.getElementById('pranzo-header');
+        const body = document.getElementById('pranzo-body');
         header.addEventListener('click', () => {
-            const isOpen = body.style.display !== 'none';
-            body.style.display = isOpen ? 'none' : 'block';
-            chevron.textContent = isOpen ? '▸' : '▾';
-            header.classList.toggle('open', !isOpen);
+            setPranzoOpen(body.style.display === 'none');
         });
     }
 
-    // ---- VINO ----
+    // ---- RIEPILOGO / STEPPER / VINO ----
     function updateRiepilogoGiornata() {
         const el = document.getElementById('riepilogo-list');
         if (!el || typeof elencoPastiSelezionati !== 'function') return;
@@ -1091,6 +1167,8 @@
     }
 
     function salvaBozza() {
+        // Durante il ripristino non sovrascrivo la bozza con uno stato a metà
+        if (window._ripristinoInCorso) return;
         try {
             const stato = raccogliStatoCorrente();
             localStorage.setItem('bozza-' + stato.data, JSON.stringify(stato));
@@ -1098,18 +1176,22 @@
     }
     window.salvaBozza = salvaBozza;
 
+    // Se un pasto sostitutivo è selezionato, disabilita le altre opzioni della sua card
+    function applicaSostitutivo(cb) {
+        const card = document.getElementById(cb.dataset.targetCard);
+        if (!card) return;
+        const altre = card.querySelectorAll('input[type="checkbox"]:not(.meal-replace-checkbox)');
+        altre.forEach(o => {
+            const item = o.closest('.check-item');
+            if (cb.checked) { o.checked = false; o.disabled = true; if (item) item.classList.add('disabled'); }
+            else { o.disabled = false; if (item) item.classList.remove('disabled'); }
+        });
+    }
+
     function inizializzaSostitutivi() {
         document.querySelectorAll('.meal-replace-checkbox').forEach(cb => {
             cb.addEventListener('change', () => {
-                const cardId = cb.dataset.targetCard;
-                const card = document.getElementById(cardId);
-                if (!card) return;
-                const altre = card.querySelectorAll('input[type="checkbox"]:not(.meal-replace-checkbox)');
-                altre.forEach(o => {
-                    const item = o.closest('.check-item');
-                    if (cb.checked) { o.checked = false; o.disabled = true; if (item) item.classList.add('disabled'); }
-                    else { o.disabled = false; if (item) item.classList.remove('disabled'); }
-                });
+                applicaSostitutivo(cb);
                 if (window.updateTotalsAndRules) window.updateTotalsAndRules();
                 salvaBozza();
             });
@@ -1136,37 +1218,15 @@
     function applicaStato(stato) {
         if (!stato) return;
 
-        if (Array.isArray(stato.pasti_selezionati)) {
-            stato.pasti_selezionati.forEach(valore => {
-                let match = null;
-                const testo = String(valore);
-                if (testo.includes('|||')) {
-                    const [sectionId, label] = testo.split('|||');
-                    const scope = sectionId && sectionId !== 'unknown' ? document.getElementById(sectionId) : document;
-                    if (scope) {
-                        match = Array.from(scope.querySelectorAll('input[type="checkbox"]'))
-                            .find(cb => { const span = cb.parentElement.querySelector('span'); return span && span.textContent.trim() === label.trim(); });
-                    }
-                } else {
-                    // Formato vecchio (senza sezione): compatibilità con bozze salvate prima di questa correzione
-                    match = document.getElementById(testo);
-                    if (!match) {
-                        match = Array.from(document.querySelectorAll('input[type="checkbox"]'))
-                            .find(cb => { const span = cb.parentElement.querySelector('span'); return span && span.textContent.trim() === testo.trim(); });
-                    }
-                }
-                if (match) match.checked = true;
-            });
-            if (window.updateTotalsAndRules) window.updateTotalsAndRules();
-        }
+        window._ripristinoInCorso = true;
 
-        clickMatchingButton('evacuazione', stato.evacuazione);
-        setTimeout(() => clickMatchingButton('bristol', stato.bristol), 0);
-        clickMatchingButton('gonfiore', stato.gonfiore);
-        clickMatchingButton('allenamento', stato.allenamento);
-        clickMatchingButton('sonno', stato.sonno);
-        clickMatchingButton('acqua', stato.acqua);
+        // 1) Extra e bottoni che influenzano le regole (aperitivo, vino, stepper)
         if (stato.aperitivo_tipo) clickMatchingButton('aperitivo', stato.aperitivo_tipo);
+
+        if (stato.vino_bicchieri !== undefined && stato.vino_bicchieri !== null) {
+            const vinoBtn = document.querySelector(`[data-group="vino"] .btn-option[data-value="${stato.vino_bicchieri}"]`);
+            if (vinoBtn) vinoBtn.click();
+        }
 
         let extrasStepperData = stato.extras_stepper;
         if (typeof extrasStepperData === 'string') {
@@ -1182,18 +1242,66 @@
                     if (valueEl) valueEl.textContent = e.qty;
                 }
             });
-            if (window.updateTotalsAndRules) window.updateTotalsAndRules();
         }
 
-        if (stato.vino_bicchieri !== undefined && stato.vino_bicchieri !== null) {
-            const vinoBtn = document.querySelector(`[data-group="vino"] .btn-option[data-value="${stato.vino_bicchieri}"]`);
-            if (vinoBtn) vinoBtn.click();
+        // 2) Checkbox dei pasti
+        let pasti = stato.pasti_selezionati;
+        if (typeof pasti === 'string') {
+            try { pasti = JSON.parse(pasti); } catch (e) { pasti = []; }
         }
+        if (Array.isArray(pasti)) {
+            pasti.forEach(valore => {
+                let match = null;
+                const testo = String(valore);
+                if (testo.includes('|||')) {
+                    const [sectionId, label] = testo.split('|||');
+                    const scope = sectionId && sectionId !== 'unknown' ? document.getElementById(sectionId) : document;
+                    if (scope) {
+                        match = Array.from(scope.querySelectorAll('input[type="checkbox"]'))
+                            .find(cb => { const span = cb.parentElement.querySelector('span'); return span && span.textContent.trim() === label.trim(); });
+                    }
+                } else {
+                    // Formato vecchio (senza sezione): compatibilità con bozze salvate in precedenza
+                    match = document.getElementById(testo);
+                    if (!match) {
+                        match = Array.from(document.querySelectorAll('input[type="checkbox"]'))
+                            .find(cb => { const span = cb.parentElement.querySelector('span'); return span && span.textContent.trim() === testo.trim(); });
+                    }
+                }
+                if (match) match.checked = true;
+            });
+        }
+
+        // 3) Pasto sostitutivo: ri-applica il blocco delle altre opzioni (solo per quello selezionato)
+        document.querySelectorAll('.meal-replace-checkbox').forEach(cb => {
+            if (cb.checked) applicaSostitutivo(cb);
+        });
+
+        // 4) Ricalcolo totali + regole olio (aperitivo, noci, proteina grassa)
+        if (window.updateTotalsAndRules) window.updateTotalsAndRules();
+
+        // 5) Apri il pranzo se contiene qualcosa di selezionato
+        const pranzoBody = document.getElementById('pranzo-body');
+        if (pranzoBody && pranzoBody.querySelector('input[type="checkbox"]:checked')) setPranzoOpen(true);
+
+        // 6) Diario sintomi
+        clickMatchingButton('evacuazione', stato.evacuazione);
+        setTimeout(() => clickMatchingButton('bristol', stato.bristol), 0);
+        clickMatchingButton('gonfiore', stato.gonfiore);
+        clickMatchingButton('allenamento', stato.allenamento);
+        clickMatchingButton('sonno', stato.sonno);
+        clickMatchingButton('acqua', stato.acqua);
 
         if (stato.peso != null && !isNaN(stato.peso)) selezionaPesoPicker(parseFloat(stato.peso));
 
         const notesEl = document.getElementById('diary-notes');
         if (notesEl && stato.note) notesEl.value = stato.note;
+
+        // Fine ripristino: riabilito il salvataggio bozza dopo i click differiti
+        setTimeout(() => {
+            window._ripristinoInCorso = false;
+            salvaBozza();
+        }, 600);
     }
 
     async function caricaDatiOggiDalCloud(dataOggi) {
@@ -1212,37 +1320,152 @@
         const bozzaLocale = localStorage.getItem('bozza-' + dataOggi);
         if (bozzaLocale) {
             try { applicaStato(JSON.parse(bozzaLocale)); mostraAvviso('Bozza di oggi ripristinata.'); return; }
-            catch (e) { console.error('Bozza locale corrotta, provo dal cloud:', e); }
+            catch (e) { console.error('Bozza locale corrotta, provo dal cloud:', e); window._ripristinoInCorso = false; }
         }
         const datiCloud = await caricaDatiOggiDalCloud(dataOggi);
         if (datiCloud) { applicaStato(datiCloud); mostraAvviso('Dati di oggi già salvati nel Cloud: ripristinati.'); }
     }
 
+    // ==========================================
+    // GRAFICO PESO (giornaliero + media mobile / vista settimanale)
+    // ==========================================
+    let pesoStorico = []; // [{ data: 'YYYY-MM-DD', peso: number }] in ordine crescente
+    let pesoMode = '30';  // '30' | '90' | 'week'
+    try { pesoMode = localStorage.getItem('peso-range') || '30'; } catch (e) { pesoMode = '30'; }
+
+    // Media mobile a 7 giorni (calcolata sulla storia completa, così i primi punti del periodo sono corretti)
+    function calcolaMediaMobile(serie) {
+        return serie.map(p => {
+            const inizio = formatLocalISO(addDays(parseISODate(p.data), -6));
+            const finestra = serie.filter(q => q.data >= inizio && q.data <= p.data).map(q => q.peso);
+            return +mediaArr(finestra).toFixed(2);
+        });
+    }
+
+    function aggiornaGraficoPeso() {
+        const emptyNote = document.getElementById('chart-empty-note');
+        const summary = document.getElementById('peso-summary');
+        if (!weightChartInstance) return;
+
+        document.querySelectorAll('#peso-range-switch .range-btn').forEach(b => {
+            b.classList.toggle('active', b.dataset.mode === pesoMode);
+        });
+
+        if (!pesoStorico.length) {
+            weightChartInstance.data.labels = [];
+            weightChartInstance.data.datasets = [];
+            weightChartInstance.update();
+            if (summary) summary.textContent = '';
+            if (emptyNote) {
+                emptyNote.textContent = 'Nessuno storico ancora disponibile: salva i tuoi dati nel Cloud per iniziare a costruirlo.';
+                emptyNote.style.display = 'block';
+            }
+            return;
+        }
+
+        let labels = [], datasets = [];
+
+        if (pesoMode === 'week') {
+            const gruppi = new Map();
+            pesoStorico.forEach(p => {
+                const k = formatLocalISO(mondayOf(parseISODate(p.data)));
+                if (!gruppi.has(k)) gruppi.set(k, []);
+                gruppi.get(k).push(p.peso);
+            });
+            const chiavi = Array.from(gruppi.keys()).sort().slice(-12);
+            labels = chiavi.map(k => 'Sett. ' + formatDataBreve(k));
+            datasets = [{
+                label: 'Media settimanale',
+                data: chiavi.map(k => +mediaArr(gruppi.get(k)).toFixed(2)),
+                borderColor: '#27ae60',
+                backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                borderWidth: 3, pointRadius: 4, fill: true, tension: 0.2
+            }];
+        } else {
+            const giorni = parseInt(pesoMode, 10) || 30;
+            const mm = calcolaMediaMobile(pesoStorico);
+            const limite = formatLocalISO(addDays(new Date(), -(giorni - 1)));
+            const idx = [];
+            pesoStorico.forEach((p, i) => { if (p.data >= limite) idx.push(i); });
+            labels = idx.map(i => formatDataBreve(pesoStorico[i].data));
+            datasets = [
+                {
+                    label: 'Peso giornaliero',
+                    data: idx.map(i => pesoStorico[i].peso),
+                    borderColor: 'rgba(39, 174, 96, 0.45)',
+                    backgroundColor: 'rgba(39, 174, 96, 0.45)',
+                    borderWidth: 1, pointRadius: 2.5, fill: false, tension: 0
+                },
+                {
+                    label: 'Media 7 giorni',
+                    data: idx.map(i => mm[i]),
+                    borderColor: '#1b6b3f',
+                    backgroundColor: '#1b6b3f',
+                    borderWidth: 3, pointRadius: 0, fill: false, tension: 0.3
+                }
+            ];
+        }
+
+        weightChartInstance.data.labels = labels;
+        weightChartInstance.data.datasets = datasets;
+        weightChartInstance.update();
+
+        if (emptyNote) {
+            if (!labels.length) {
+                emptyNote.textContent = 'Nessun peso registrato nel periodo selezionato.';
+                emptyNote.style.display = 'block';
+            } else {
+                emptyNote.style.display = 'none';
+            }
+        }
+
+        // Riga di riepilogo: media ultimi 7 giorni vs 7 giorni precedenti
+        if (summary) {
+            const oggi = new Date();
+            const da7 = formatLocalISO(addDays(oggi, -6));
+            const da14 = formatLocalISO(addDays(oggi, -13));
+            const finePrec = formatLocalISO(addDays(oggi, -7));
+            const ult = pesoStorico.filter(p => p.data >= da7).map(p => p.peso);
+            const prec = pesoStorico.filter(p => p.data >= da14 && p.data <= finePrec).map(p => p.peso);
+            if (!ult.length) {
+                summary.textContent = 'Nessun peso registrato negli ultimi 7 giorni.';
+            } else {
+                let testo = `Media ultimi 7 giorni: ${mediaArr(ult).toFixed(1)} kg`;
+                if (prec.length) {
+                    const diff = +(mediaArr(ult) - mediaArr(prec)).toFixed(1);
+                    testo += ` (${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg vs i 7 giorni prima)`;
+                }
+                summary.textContent = testo;
+            }
+        }
+    }
+
     async function caricaStoricoPeso() {
         const emptyNote = document.getElementById('chart-empty-note');
-        if (!supabaseClient || !currentUser) { if (emptyNote) emptyNote.style.display = 'block'; return; }
+        if (!supabaseClient || !currentUser) { aggiornaGraficoPeso(); return; }
         try {
             const { data, error } = await supabaseClient
                 .from('diario').select('data, peso').eq('user_id', currentUser.id)
-                .not('peso', 'is', null).order('data', { ascending: true }).limit(30);
-            if (error) { console.error('Errore caricamento storico peso:', error); if (emptyNote) emptyNote.style.display = 'block'; return; }
-            if (!data || data.length === 0) { if (emptyNote) emptyNote.style.display = 'block'; return; }
-            if (emptyNote) emptyNote.style.display = 'none';
-            weightChartInstance.data.labels = data.map(r => formatDataBreve(r.data));
-            weightChartInstance.data.datasets[0].data = data.map(r => r.peso);
-            weightChartInstance.update();
-        } catch (e) { console.error('Errore caricamento storico peso:', e); if (emptyNote) emptyNote.style.display = 'block'; }
+                .not('peso', 'is', null).order('data', { ascending: false }).limit(400);
+            if (error) {
+                console.error('Errore caricamento storico peso:', error);
+                if (emptyNote) { emptyNote.textContent = 'Errore nel caricamento dello storico peso.'; emptyNote.style.display = 'block'; }
+                return;
+            }
+            pesoStorico = (data || [])
+                .map(r => ({ data: r.data, peso: parseFloat(r.peso) }))
+                .filter(r => !isNaN(r.peso))
+                .reverse();
+            aggiornaGraficoPeso();
+        } catch (e) {
+            console.error('Errore caricamento storico peso:', e);
+            if (emptyNote) { emptyNote.textContent = 'Errore nel caricamento dello storico peso.'; emptyNote.style.display = 'block'; }
+        }
     }
 
-    // ---- CONTATORI SETTIMANALI (vino / noci) ----
+    // ---- CONTATORI SETTIMANALI (vino / noci / formaggio) ----
     function getMondayOfThisWeek() {
-        const today = new Date();
-        const day = today.getDay();
-        const diff = day === 0 ? 6 : day - 1;
-        const monday = new Date(today);
-        monday.setDate(today.getDate() - diff);
-        monday.setHours(0, 0, 0, 0);
-        return monday.toISOString().split('T')[0];
+        return formatLocalISO(mondayOf(new Date()));
     }
 
     function applyQuotaMaxColor(el, value, max) {
@@ -1298,7 +1521,13 @@
             const avgFat = Math.round(data.reduce((s, r) => s + parseNum(r.grassi), 0) / n);
 
             const avgHtml = `<div style="display:flex; justify-content:space-between; padding:6px 0 10px; margin-bottom:6px; border-bottom:2px solid var(--border); font-weight:700; color:var(--primary);">
-                <span>Media (${n} giorni)</span><span>${avgKcal} kcal · ${avgProt}g P · ${avgCarb}g C · ${avgFat}g G</span>
+                <span>Media (${n} giorni)</span>
+                <span>
+                    <span class="avg-metric" id="avg-kcal">${avgKcal} kcal</span> ·
+                    <span class="avg-metric" id="avg-prot">${avgProt}g P</span> ·
+                    <span class="avg-metric" id="avg-carb">${avgCarb}g C</span> ·
+                    <span class="avg-metric" id="avg-fat">${avgFat}g G</span>
+                </span>
             </div>`;
 
             const rowsHtml = data.map(r =>
@@ -1306,6 +1535,11 @@
             ).join('');
 
             el.innerHTML = avgHtml + rowsHtml;
+
+            applyTargetColor(document.getElementById('avg-kcal'), avgKcal, 1300, 1400);
+            applyTargetColor(document.getElementById('avg-prot'), avgProt, 80, 85);
+            applyTargetColor(document.getElementById('avg-carb'), avgCarb, 160, 165);
+            applyTargetColor(document.getElementById('avg-fat'), avgFat, 40, 50);
         } catch (e) { console.error('Errore caricamento storico settimana:', e); }
     }
 
